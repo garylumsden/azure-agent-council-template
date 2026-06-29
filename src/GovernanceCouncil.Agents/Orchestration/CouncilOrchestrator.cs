@@ -189,10 +189,18 @@ public sealed class CouncilOrchestrator
 
             await _assessmentStore.UpsertAsync(assessment, ct);
 
-            // Post-deliberation nexus discovery — must never fail the deliberation.
+            // Post-deliberation nexus discovery — must never fail the deliberation. Surfaced in the
+            // live thread (running → found N) the same way the Chair's synthesis turn is.
             if (_nexusAnalyst is not null)
             {
-                try { await _nexusAnalyst.AnalyseAsync(assessment.AssessmentId, ct); }
+                var nexusKey = $"gc-{CouncilMembers.NexusAnalyst.Id}";
+                try
+                {
+                    await _notifier.DebatePhaseAsync(deliberationId, "Nexus");
+                    await _notifier.NexusAnalysisAsync(deliberationId, nexusKey, null);
+                    var nexuses = await _nexusAnalyst.AnalyseAsync(assessment.AssessmentId, ct);
+                    await _notifier.NexusAnalysisAsync(deliberationId, nexusKey, nexuses.Count);
+                }
                 catch (Exception nexusEx) { _logger.LogWarning(nexusEx, "Nexus analysis failed for assessment {AssessmentId}", assessment.AssessmentId); }
             }
 

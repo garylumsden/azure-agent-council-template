@@ -185,8 +185,14 @@
         public bool Speaking { get; set; }
         public bool IsSynthesis { get; set; }
         public bool IsAssessment { get; set; }
+        public bool IsNexus { get; set; }
+        public int? NexusCount { get; set; }
         public List<Citation> Citations { get; } = new();
     }
+
+    // The Nexus Analyst's post-synthesis turn (running → found N). Tracked separately so its
+    // status-only turn never collides with the streaming speaker turns.
+    private TurnState? _nexusTurn;
 
     private sealed class AgentStreamState
     {
@@ -205,27 +211,62 @@
         public List<Citation> Citations { get; } = new();
     }
 
+    // Per-seat presentation derived from a configured persona — never hard-coded. The roster,
+    // names, roles, count, and colours all come from the active scenario via CouncilMembers.
     private sealed record RosterEntry(string Key, string Name, string Role, string Initials, string Colour, bool IsChair = false);
 
-    // Fixed council roster — colour-coded by role. Drives seat rendering even in
-    // non-AgentFramework modes (hands/mics simply stay idle).
-    private static readonly RosterEntry[] Roster =
+    private static RosterEntry ToEntry(CouncilMember m, bool isChair = false) =>
+        new($"gc-{m.Id}", m.Name, m.Role, SeatInitials(m.Name), SeatColour(m.Id), isChair);
+
+    // Chamber seats: the scenario's debating members (in order), then the Chair at the podium.
+    // Moderator and Nexus Analyst are framework roles and are intentionally not seated.
+    private static List<RosterEntry> Roster
     {
-        new("gc-cdio",    "CDIO",             "Digital & Information", "CD", "#0d9488"),
-        new("gc-ciso",    "CISO",             "Security",              "CI", "#dc2626"),
-        new("gc-dpo",     "DPO",              "Data Protection",       "DP", "#7c3aed"),
-        new("gc-finance", "Finance Director", "Finance",               "FD", "#16a34a"),
-        new("gc-policy",  "Policy Director",  "Policy",                "PD", "#2563eb"),
-        new("gc-people",  "People Director",  "People",                "Pe", "#ea580c"),
-        new("gc-analyst", "Chief Economist",  "Economics",             "CE", "#b45309"),
-        new("gc-chair",   "Council Chair",    "Chair",                 "CC", "#ca8a04", IsChair: true),
-    };
+        get
+        {
+            var entries = CouncilMembers.DeliberationMembers.Select(m => ToEntry(m)).ToList();
+            entries.Add(ToEntry(CouncilMembers.Chair, isChair: true));
+            return entries;
+        }
+    }
 
     private static readonly MarkdownPipeline _mdPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions().Build();
 
+    // Always label by the configured display name (Persona.Name); fall back to the raw key, never a role.
     private static string SpeakerName(string key) =>
-        Roster.FirstOrDefault(x => string.Equals(x.Key, key, StringComparison.OrdinalIgnoreCase))?.Name ?? key;
+        CouncilMembers.ByAgentName(key)?.Name ?? key;
+
+    // Deterministic initials from a display name: handles single/multi-word and non-Latin names.
+    private static string SeatInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var words = name.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        static string FirstRune(string w)
+        {
+            foreach (var r in w.EnumerateRunes()) return r.ToString();
+            return "";
+        }
+        var s = words.Length == 1
+            ? string.Concat(words[0].EnumerateRunes().Take(2).Select(r => r.ToString()))
+            : FirstRune(words[0]) + FirstRune(words[^1]);
+        s = s.ToUpperInvariant();
+        return string.IsNullOrEmpty(s) ? "?" : s;
+    }
+
+    // Deterministic, process-independent colour from the persona id (FNV-1a → evenly spaced hue),
+    // so an arbitrary number of members each get a distinct, stable colour.
+    private static string SeatColour(string id)
+    {
+        uint hash = 2166136261u;
+        foreach (var ch in id)
+        {
+            hash ^= ch;
+            hash *= 16777619u;
+        }
+        var hue = hash % 360u;
+        return $"hsl({hue}, 60%, 46%)";
+    }
 
     // True while the council is forming independent positions (Phase 1), before the debate opens.
     private bool IsAssessmentPhase =>
@@ -240,8 +281,9 @@
 
     private List<DebateChamber.SeatVm> BuildSeats()
     {
-        var seats = new List<DebateChamber.SeatVm>(Roster.Length);
-        foreach (var r in Roster)
+        var roster = Roster;
+        var seats = new List<DebateChamber.SeatVm>(roster.Count);
+        foreach (var r in roster)
         {
             _agentStates.TryGetValue(r.Key, out var st);
             seats.Add(new DebateChamber.SeatVm
@@ -269,17 +311,21 @@
         var vms = new List<DebateChamber.TurnVm>(_turns.Count);
         foreach (var t in _turns)
         {
-            var r = Roster.FirstOrDefault(x => string.Equals(x.Key, t.AgentKey, StringComparison.OrdinalIgnoreCase));
+            // Resolve every speaker — members, Chair, and Nexus Analyst — by its configured
+            // display name; fall back to the raw key (never a role) if the key is unknown.
+            var member = CouncilMembers.ByAgentName(t.AgentKey);
             vms.Add(new DebateChamber.TurnVm
             {
-                DisplayName = r?.Name ?? t.AgentKey,
-                Role = r?.Role ?? "",
-                Initials = r?.Initials ?? "?",
-                Colour = r?.Colour ?? "#64748b",
+                DisplayName = member?.Name ?? t.AgentKey,
+                Role = member?.Role ?? "",
+                Initials = member is null ? "?" : SeatInitials(member.Name),
+                Colour = member is null ? "#64748b" : SeatColour(member.Id),
                 Text = t.Text,
                 Speaking = t.Speaking,
                 IsSynthesis = t.IsSynthesis,
                 IsAssessment = t.IsAssessment,
+                IsNexus = t.IsNexus,
+                NexusCount = t.NexusCount,
                 Citations = t.Citations.Count > 0 ? t.Citations : null,
             });
         }
@@ -538,6 +584,20 @@
                 st.IsSpeaking = false;
                 st.HandRaised = false;
             }
+            InvokeAsync(StateHasChanged);
+        });
+
+        // Nexus Analyst stage — appears in the thread after the Chair's synthesis, the same way the
+        // Chair's turn does. count == null ⇒ running; count >= 0 ⇒ finished (0 ⇒ no connections).
+        _hubConnection.On<string, int?>("NexusAnalysis", (agentName, count) =>
+        {
+            if (_nexusTurn is null)
+            {
+                _nexusTurn = new TurnState { AgentKey = agentName, IsNexus = true };
+                _turns.Add(_nexusTurn);
+            }
+            _nexusTurn.Speaking = count is null;
+            _nexusTurn.NexusCount = count;
             InvokeAsync(StateHasChanged);
         });
 

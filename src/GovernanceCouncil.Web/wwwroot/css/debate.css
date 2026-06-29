@@ -69,10 +69,11 @@
     margin: 0.5rem 0 0.25rem;
 }
 
-/* A member's seat, absolutely positioned along the arc */
+/* A member's seat, absolutely positioned along the arc. --seat-scale (set per seat) shrinks
+   seats as the council grows so a larger hemicycle stays legible without overlap. */
 .seat {
     position: absolute;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) scale(var(--seat-scale, 1));
     width: 88px;
     display: flex;
     flex-direction: column;
@@ -82,7 +83,7 @@
 }
 
 .seat.speaking {
-    transform: translate(-50%, -50%) scale(1.18);
+    transform: translate(-50%, -50%) scale(calc(var(--seat-scale, 1) * 1.18));
     z-index: 20;
 }
 

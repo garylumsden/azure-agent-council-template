@@ -46,4 +46,11 @@ public interface IDeliberationNotifier
 
     /// <summary>The debate has concluded (no further hands, or the round cap was reached).</summary>
     Task DebateConcludedAsync(string deliberationId, string reason);
+
+    /// <summary>
+    /// The post-deliberation Nexus Analyst stage. <paramref name="connectionCount"/> is null while it
+    /// runs and the discovered count once finished (0 ⇒ no connections). Lets the Nexus Analyst appear
+    /// in the live thread the same way the Chair's synthesis turn does.
+    /// </summary>
+    Task NexusAnalysisAsync(string deliberationId, string agentName, int? connectionCount);
 }

@@ -116,4 +116,10 @@ public sealed class DeliberationNotifier : IDeliberationNotifier
     {
         await _hub.Clients.Group(deliberationId).SendAsync("DebateConcluded", reason);
     }
+
+    /// <summary>The Nexus Analyst stage (null count ⇒ running; >= 0 ⇒ finished with that many connections).</summary>
+    public async Task NexusAnalysisAsync(string deliberationId, string agentName, int? connectionCount)
+    {
+        await _hub.Clients.Group(deliberationId).SendAsync("NexusAnalysis", agentName, connectionCount);
+    }
 }

@@ -30,9 +30,9 @@
         @for (var i = 0; i < n; i++)
         {
             var seat = members[i];
-            var (left, top) = ArcPosition(i, n);
+            var (left, top, scale) = ArcPosition(i, n);
             <div class="seat @(seat.Speaking ? "speaking" : "") @(seat.HandRaised ? "hand-up" : "") @(seat.MicLive ? "mic-live" : "") @(seat.Assessing ? "assessing" : "")"
-                 style="left:@(left.ToString(Ci))%; top:@(top.ToString(Ci))%;">
+                 style="left:@(left.ToString(Ci))%; top:@(top.ToString(Ci))%; --seat-scale:@(scale.ToString(Ci));">
                 <span class="hand" aria-hidden="@( !seat.HandRaised )"
                       aria-label="@(seat.HandRaised ? $"{seat.DisplayName} has raised a hand to speak: {seat.HandReason}" : null)">✋</span>
                 @if (seat.HandRaised && !string.IsNullOrWhiteSpace(seat.HandReason))
@@ -145,6 +145,21 @@
                                 <em class="text-muted">⚖️ The Chair is finalising the Assessment…</em>
                             }
                         }
+                        else if (turn.IsNexus)
+                        {
+                            @if (turn.NexusCount is null)
+                            {
+                                <em class="text-muted">🔗 @turn.DisplayName is connecting this assessment to prior decisions…</em>
+                            }
+                            else if (turn.NexusCount == 0)
+                            {
+                                <span class="chair-done">🔗 @turn.DisplayName found no connections to prior decisions.</span>
+                            }
+                            else
+                            {
+                                <span class="chair-done">🔗 @turn.DisplayName found @turn.NexusCount connection@(turn.NexusCount == 1 ? "" : "s") to prior decisions.</span>
+                            }
+                        }
                         else if (string.IsNullOrWhiteSpace(turn.Text))
                         {
                             <em class="text-muted">@(turn.IsAssessment ? "forming initial position…" : "Taking the floor…")</em>
@@ -153,7 +168,7 @@
                         {
                             @((MarkupString)Markdown.ToHtml(ModelText.StripSourceAnnotations(turn.Text), _mdPipeline))
                         }
-                        @if (turn.Speaking && !turn.IsSynthesis)
+                        @if (turn.Speaking && !turn.IsSynthesis && !turn.IsNexus)
                         {
                             <span class="caret" aria-hidden="true"></span>
                         }
@@ -208,18 +223,65 @@
         catch (JSDisconnectedException) { /* circuit disconnected */ }
     }
 
-    // Position member i of n along a semicircular arc (percent of the hemicycle box).
-    // Chair sits at the focal point (podium, bottom-centre); members face inward.
-    private static (double left, double top) ArcPosition(int i, int n)
+    // Position member i of n along a parliamentary hemicycle (percent of the chamber box), adapting
+    // to the member count: a single arc reads cleanly up to ~9 seats (the supported maximum), and
+    // beyond that seats wrap into concentric arcs so they never overlap or clip. The angular sweep and
+    // a per-seat scale also tighten as density grows, while small N stays centred and intentional.
+    // Returns (left%, top%, scale) — scale feeds the --seat-scale CSS variable.
+    private static (double left, double top, double scale) ArcPosition(int i, int n)
     {
-        const double startDeg = 165, endDeg = 15;   // left → right
-        const double rx = 44, ry = 58;
-        var frac = n <= 1 ? 0.5 : (double)i / (n - 1);
+        var rows = n <= 9 ? 1 : n <= 16 ? 2 : 3;
+        var perRow = DistributeRows(n, rows);
+
+        // Locate this seat's row (outer/back row first) and its index within that row.
+        int row = 0, idxInRow = i, seen = 0;
+        for (var r = 0; r < rows; r++)
+        {
+            if (i < seen + perRow[r]) { row = r; idxInRow = i - seen; break; }
+            seen += perRow[r];
+        }
+        var countInRow = perRow[row];
+
+        // Outer row is the largest, highest arc; inner rows step inward and slightly down toward the Chair.
+        var rx = 44.0 - row * 13.0;
+        var ry = 58.0 - row * 14.0;
+        var baseTop = 72.0 - row * 3.0;
+
+        // ~30° between adjacent seats, capped so a full row fans across the chamber. Tiny rows cluster
+        // centrally (sweep ≈ 0 for one seat) rather than pinning to the extremes.
+        var sweep = Math.Min(150.0, 30.0 * (countInRow - 1));
+        const double centre = 90.0;
+        var startDeg = centre + sweep / 2.0;   // left
+        var endDeg = centre - sweep / 2.0;     // right
+        var frac = countInRow <= 1 ? 0.5 : (double)idxInRow / (countInRow - 1);
         var deg = startDeg + (endDeg - startDeg) * frac;
         var rad = deg * Math.PI / 180.0;
+
         var left = 50 + rx * Math.Cos(rad);
-        var top = 74 - ry * Math.Sin(rad);
-        return (Math.Round(left, 2), Math.Round(top, 2));
+        var top = baseTop - ry * Math.Sin(rad);
+
+        var scale = n <= 5 ? 1.0 : n <= 8 ? 0.9 : n <= 12 ? 0.82 : 0.72;
+        return (Math.Round(left, 2), Math.Round(top, 2), Math.Round(scale, 3));
+    }
+
+    // Split n members across the given number of arcs, weighting each row by its arc width so the
+    // larger back rows hold proportionally more seats (a hemicycle fans wider at the back). Any
+    // remainder goes to the outer rows first. e.g. 12 over 2 rows ⇒ [7, 5].
+    private static int[] DistributeRows(int n, int rows)
+    {
+        var weights = new double[rows];
+        double total = 0;
+        for (var r = 0; r < rows; r++) { weights[r] = 44.0 - r * 13.0; total += weights[r]; }
+
+        var result = new int[rows];
+        var assigned = 0;
+        for (var r = 0; r < rows; r++)
+        {
+            result[r] = (int)Math.Floor(n * weights[r] / total);
+            assigned += result[r];
+        }
+        for (var r = 0; assigned < n; r = (r + 1) % rows) { result[r]++; assigned++; }
+        return result;
     }
 
     public sealed class SeatVm
@@ -249,6 +311,8 @@
         public bool Speaking { get; set; }
         public bool IsSynthesis { get; set; }
         public bool IsAssessment { get; set; }
+        public bool IsNexus { get; set; }
+        public int? NexusCount { get; set; }
         public IReadOnlyList<Citation>? Citations { get; set; }
     }
 }
