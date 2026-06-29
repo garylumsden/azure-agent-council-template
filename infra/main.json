@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.1.21952",
-      "templateHash": "1832712348184495333"
+      "templateHash": "491129235920251425"
     }
   },
   "parameters": {
@@ -210,7 +210,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.1.21952",
-              "templateHash": "5550503639880731931"
+              "templateHash": "15589617902001236442"
             }
           },
           "parameters": {
@@ -1692,7 +1692,7 @@
             {
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2025-04-01",
-              "name": "deploy-grok-reasoning",
+              "name": "deploy-grok-43",
               "properties": {
                 "expressionEvaluationOptions": {
                   "scope": "inner"
@@ -1703,10 +1703,10 @@
                     "value": "[variables('aiServicesName')]"
                   },
                   "deploymentName": {
-                    "value": "grok-4.1-fast-reasoning"
+                    "value": "grok-4.3"
                   },
                   "modelName": {
-                    "value": "grok-4-1-fast-reasoning"
+                    "value": "grok-4.3"
                   },
                   "modelFormat": {
                     "value": "xAI"
@@ -1807,126 +1807,6 @@
               "dependsOn": [
                 "[resourceId('Microsoft.CognitiveServices/accounts', variables('aiServicesName'))]",
                 "[resourceId('Microsoft.Resources/deployments', 'deploy-nano')]"
-              ]
-            },
-            {
-              "type": "Microsoft.Resources/deployments",
-              "apiVersion": "2025-04-01",
-              "name": "deploy-grok-nonreasoning",
-              "properties": {
-                "expressionEvaluationOptions": {
-                  "scope": "inner"
-                },
-                "mode": "Incremental",
-                "parameters": {
-                  "aiServicesName": {
-                    "value": "[variables('aiServicesName')]"
-                  },
-                  "deploymentName": {
-                    "value": "grok-4.1-fast-non-reasoning"
-                  },
-                  "modelName": {
-                    "value": "grok-4-1-fast-non-reasoning"
-                  },
-                  "modelFormat": {
-                    "value": "xAI"
-                  },
-                  "modelVersion": {
-                    "value": "1"
-                  },
-                  "skuName": {
-                    "value": "GlobalStandard"
-                  },
-                  "skuCapacity": {
-                    "value": 500
-                  }
-                },
-                "template": {
-                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                  "contentVersion": "1.0.0.0",
-                  "metadata": {
-                    "_generator": {
-                      "name": "bicep",
-                      "version": "0.43.1.21952",
-                      "templateHash": "1145286355255115408"
-                    }
-                  },
-                  "parameters": {
-                    "aiServicesName": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "Name of the AI Services account"
-                      }
-                    },
-                    "deploymentName": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "Deployment name (e.g. gpt-5)"
-                      }
-                    },
-                    "modelName": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "Model name (e.g. gpt-5)"
-                      }
-                    },
-                    "modelFormat": {
-                      "type": "string",
-                      "defaultValue": "OpenAI",
-                      "metadata": {
-                        "description": "Model format"
-                      }
-                    },
-                    "modelVersion": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Model version (leave empty for latest)"
-                      }
-                    },
-                    "skuName": {
-                      "type": "string",
-                      "defaultValue": "GlobalStandard",
-                      "metadata": {
-                        "description": "SKU name"
-                      }
-                    },
-                    "skuCapacity": {
-                      "type": "int",
-                      "metadata": {
-                        "description": "SKU capacity"
-                      }
-                    }
-                  },
-                  "resources": [
-                    {
-                      "type": "Microsoft.CognitiveServices/accounts/deployments",
-                      "apiVersion": "2025-09-01",
-                      "name": "[format('{0}/{1}', parameters('aiServicesName'), parameters('deploymentName'))]",
-                      "sku": {
-                        "name": "[parameters('skuName')]",
-                        "capacity": "[parameters('skuCapacity')]"
-                      },
-                      "properties": {
-                        "model": {
-                          "format": "[parameters('modelFormat')]",
-                          "name": "[parameters('modelName')]",
-                          "version": "[if(not(empty(parameters('modelVersion'))), parameters('modelVersion'), null())]"
-                        }
-                      }
-                    }
-                  ],
-                  "outputs": {
-                    "deploymentName": {
-                      "type": "string",
-                      "value": "[parameters('deploymentName')]"
-                    }
-                  }
-                }
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.CognitiveServices/accounts', variables('aiServicesName'))]",
-                "[resourceId('Microsoft.Resources/deployments', 'deploy-grok-reasoning')]"
               ]
             }
           ],

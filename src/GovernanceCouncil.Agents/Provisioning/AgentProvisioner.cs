@@ -196,7 +196,7 @@ internal sealed class AgentProvisioner
         // Prompt agents run on the Responses API, so reasoning is the object { effort }, not the flat
         // Chat-Completions `reasoning_effort`.
         if (CouncilModels.ReasoningEffortFor(member.Tier) is { } effort && CouncilModels.SupportsReasoningEffort(member.ModelDeployment))
-            definition["reasoning"] = new { effort };
+            definition["reasoning"] = new { effort = CouncilModels.NormalizeEffort(member.ModelDeployment, effort) };
 
         var body = JsonSerializer.Serialize(new { definition });
 

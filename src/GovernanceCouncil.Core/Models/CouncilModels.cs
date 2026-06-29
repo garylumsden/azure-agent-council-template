@@ -11,7 +11,7 @@ namespace GovernanceCouncil.Core.Models;
 ///   Frontier — highest quality: gpt-5.4 personas + chair (slowest, priciest)
 ///   Balanced — gpt-5-mini personas with a premium gpt-5.4 chair synthesis
 ///   Fast     — all gpt-5-mini personas + chair (schema-reliable), gpt-5-nano routing
-///   Grok     — experimental xAI grok-4.1-fast (non-reasoning, for speed); no strict structured outputs (relies on prompt JSON)
+///   Grok     — xAI grok-4.3 (single tunable reasoning model: reasoning_effort none/low/medium/high); no strict structured outputs (relies on prompt JSON)
 /// </summary>
 public static class CouncilModels
 {
@@ -44,10 +44,10 @@ public static class CouncilModels
         [ModelProfile.Frontier] = ("gpt-5.4",                 "gpt-5.4",                 "gpt-5-mini"),
         [ModelProfile.Balanced] = ("gpt-5-mini",              "gpt-5.4",                 "gpt-5-nano"),
         [ModelProfile.Fast]     = ("gpt-5-mini",              "gpt-5-mini",              "gpt-5-nano"),
-        // Grok uses the NON-reasoning variant on every tier: the reasoning variant routinely exceeds the
-        // 100s client timeout, so it's unusable for a "fast" profile. Override a single tier with
-        // COUNCIL_REASONING_MODEL=grok-4.1-fast-reasoning if you specifically want reasoning Grok.
-        [ModelProfile.Grok]     = ("grok-4.1-fast-non-reasoning", "grok-4.1-fast-non-reasoning", "grok-4.1-fast-non-reasoning"),
+        // Grok now uses grok-4.3 — a single tunable reasoning model that honours reasoning_effort
+        // (verified on Foundry: none=0 reasoning tokens). Per-tier effort applies: routing/bids none,
+        // members low, chair/nexus medium (our "minimal" maps to xAI "none" — see NormalizeEffort).
+        [ModelProfile.Grok]     = ("grok-4.3",                "grok-4.3",                "grok-4.3"),
     };
 
     private static (string Reasoning, string Synthesis, string Fast) Set => Sets[_profile];
@@ -63,10 +63,9 @@ public static class CouncilModels
 
     /// <summary>
     /// Bid + speaker-selection model for the local MAF runtime: the fastest model in the active
-    /// profile. Defaults to the profile's <see cref="Fast"/> tier, so it is genuinely non-reasoning
-    /// where the profile offers one (Grok → <c>grok-4.1-fast-non-reasoning</c>) and runs at
-    /// minimal reasoning effort otherwise (gpt-5-nano / gpt-5-mini at the Fast tier's minimal effort).
-    /// Override with <c>COUNCIL_BID_MODEL</c> if you have a dedicated deployment.
+    /// profile. Defaults to the profile's <see cref="Fast"/> tier and runs at the Fast tier's effort —
+    /// <c>minimal</c> for the GPT-5 family, or <c>reasoning_effort: none</c> on the Grok profile
+    /// (grok-4.3) — so bids stay cheap and low-latency. Override with <c>COUNCIL_BID_MODEL</c>.
     /// </summary>
     public static string BidModel => Resolve("COUNCIL_BID_MODEL", Fast);
 
@@ -105,15 +104,28 @@ public static class CouncilModels
             ? g : 2;
 
     /// <summary>
-    /// Whether a deployment is a reasoning model that accepts a <c>reasoning_effort</c> setting — the
-    /// GPT-5 reasoning family and the o-series. The non-reasoning <c>-chat</c> variants and the Grok
-    /// models do not. Used to apply per-tier reasoning effort (see <see cref="ReasoningEffortFor"/>).
+    /// Whether a deployment accepts a <c>reasoning_effort</c> setting — the GPT-5 reasoning family, the
+    /// o-series, and xAI <c>grok-4.3</c> (verified on Foundry). The <c>-chat</c> variants and the older
+    /// Grok 4.1-fast models do NOT (4.1-fast-reasoning accepts the param but ignores it).
     /// </summary>
     public static bool SupportsReasoningEffort(string deployment)
     {
         var d = (deployment ?? "").Trim().ToLowerInvariant();
-        if (d.Contains("chat") || d.Contains("grok")) return false;
+        if (d.Contains("chat")) return false;
+        if (d.Contains("grok")) return d.Contains("4.3");
         return d.StartsWith("gpt-5") || d.StartsWith("o1") || d.StartsWith("o3") || d.StartsWith("o4");
+    }
+
+    /// <summary>
+    /// Normalises a reasoning-effort value for a specific model. xAI Grok accepts
+    /// <c>none/low/medium/high</c> (no <c>minimal</c>), so our <c>minimal</c> maps to <c>none</c> there.
+    /// </summary>
+    public static string NormalizeEffort(string model, string effort)
+    {
+        var m = (model ?? "").ToLowerInvariant();
+        if (m.Contains("grok") && effort.Equals("minimal", StringComparison.OrdinalIgnoreCase))
+            return "none";
+        return effort;
     }
 
     /// <summary>

@@ -75,7 +75,7 @@ public sealed class MafCouncilRuntime : ICouncilRuntime
     /// <summary>Wraps a reasoning-capable model's client to run at its tier's reasoning effort.</summary>
     private static IChatClient WithEffort(CouncilModels.ModelTier tier, string model, IChatClient client) =>
         CouncilModels.ReasoningEffortFor(tier) is { } effort && CouncilModels.SupportsReasoningEffort(model)
-            ? new ReasoningEffortChatClient(client, effort)
+            ? new ReasoningEffortChatClient(client, CouncilModels.NormalizeEffort(model, effort))
             : client;
 
     /// <summary>Max grounding-tool calls a single debate turn may make (hard cap; tool-eager models are stopped at this).</summary>

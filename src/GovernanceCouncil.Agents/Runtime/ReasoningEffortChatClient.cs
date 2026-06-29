@@ -38,6 +38,8 @@ internal sealed class ReasoningEffortChatClient(IChatClient inner, string effort
 
     private static ChatReasoningEffortLevel Map(string effort) => effort.Trim().ToLowerInvariant() switch
     {
+        "none" => new ChatReasoningEffortLevel("none"),
+        "minimal" => ChatReasoningEffortLevel.Minimal,
         "low" => ChatReasoningEffortLevel.Low,
         "medium" => ChatReasoningEffortLevel.Medium,
         "high" => ChatReasoningEffortLevel.High,

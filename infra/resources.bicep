@@ -170,28 +170,16 @@ module nanoDeployment 'model-deployment.bicep' = {
   }
 }
 
-// Grok 4.1 Fast deployments (enable the Grok Fast profile). Always deployed.
-module grokReasoningDeployment 'model-deployment.bicep' = {
-  name: 'deploy-grok-reasoning'
+// Grok 4.3 — a SINGLE tunable reasoning model that honours reasoning_effort (none/low/medium/high;
+// verified on Foundry: effort=none → 0 reasoning tokens). Replaces the older grok-4.1-fast split
+// (reasoning + non-reasoning), whose reasoning variant timed out and ignored reasoning_effort.
+module grok43Deployment 'model-deployment.bicep' = {
+  name: 'deploy-grok-43'
   dependsOn: [nanoDeployment]
   params: {
     aiServicesName: aiServices.name
-    deploymentName: 'grok-4.1-fast-reasoning'
-    modelName: 'grok-4-1-fast-reasoning'
-    modelFormat: 'xAI'
-    modelVersion: '1'
-    skuName: 'GlobalStandard'
-    skuCapacity: 500
-  }
-}
-
-module grokNonReasoningDeployment 'model-deployment.bicep' = {
-  name: 'deploy-grok-nonreasoning'
-  dependsOn: [grokReasoningDeployment]
-  params: {
-    aiServicesName: aiServices.name
-    deploymentName: 'grok-4.1-fast-non-reasoning'
-    modelName: 'grok-4-1-fast-non-reasoning'
+    deploymentName: 'grok-4.3'
+    modelName: 'grok-4.3'
     modelFormat: 'xAI'
     modelVersion: '1'
     skuName: 'GlobalStandard'

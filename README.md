@@ -94,8 +94,10 @@ Everything scenario-specific lives in **`config/`** (read at startup; see
     in-process; bids & speaker-selection run on a fast model.
 - **Model profiles** (`COUNCIL_MODEL_PROFILE`, default `Fast`): `Frontier` / `Balanced` / `Fast` /
   `Grok` — a quality↔speed ladder selecting the model set across tiers.
-- **Per-tier reasoning effort** (GPT-5 / o-series): `minimal` bids · `low` members · `medium`
-  synthesis. Override with `COUNCIL_REASONING_EFFORT`.
+- **Per-tier reasoning effort** (GPT-5 / o-series, and xAI **grok-4.3**): `minimal`/`none` bids ·
+  `low` members · `medium` synthesis. Override with `COUNCIL_REASONING_EFFORT`. (The `Grok` profile
+  uses grok-4.3, a single tunable reasoning model that honours `reasoning_effort`; older grok-4.1-fast
+  ignores it.)
 - **Grounding** (toggle in UI): **Web IQ** or **Foundry IQ**, each scoped to the scenario's
   authoritative domains (the Chair gets them all). No domains ⇒ ungrounded. In MAF mode the grounding
   tool is bounded per turn (3-iteration cap + a hard 2-call search budget) so a tool-eager model can't
