@@ -11,7 +11,7 @@ namespace GovernanceCouncil.Core.Models;
 ///   Frontier — highest quality: gpt-5.4 personas + chair (slowest, priciest)
 ///   Balanced — gpt-5-mini personas with a premium gpt-5.4 chair synthesis
 ///   Fast     — all gpt-5-mini personas + chair (schema-reliable), gpt-5-nano routing
-///   Grok     — experimental xAI grok-4.1-fast; no strict structured outputs (relies on prompt JSON)
+///   Grok     — experimental xAI grok-4.1-fast (non-reasoning, for speed); no strict structured outputs (relies on prompt JSON)
 /// </summary>
 public static class CouncilModels
 {
@@ -44,7 +44,10 @@ public static class CouncilModels
         [ModelProfile.Frontier] = ("gpt-5.4",                 "gpt-5.4",                 "gpt-5-mini"),
         [ModelProfile.Balanced] = ("gpt-5-mini",              "gpt-5.4",                 "gpt-5-nano"),
         [ModelProfile.Fast]     = ("gpt-5-mini",              "gpt-5-mini",              "gpt-5-nano"),
-        [ModelProfile.Grok]     = ("grok-4.1-fast-reasoning", "grok-4.1-fast-reasoning", "grok-4.1-fast-non-reasoning"),
+        // Grok uses the NON-reasoning variant on every tier: the reasoning variant routinely exceeds the
+        // 100s client timeout, so it's unusable for a "fast" profile. Override a single tier with
+        // COUNCIL_REASONING_MODEL=grok-4.1-fast-reasoning if you specifically want reasoning Grok.
+        [ModelProfile.Grok]     = ("grok-4.1-fast-non-reasoning", "grok-4.1-fast-non-reasoning", "grok-4.1-fast-non-reasoning"),
     };
 
     private static (string Reasoning, string Synthesis, string Fast) Set => Sets[_profile];
