@@ -1,7 +1,6 @@
 ---
 name: Scenario Architect
 description: Guided setup agent that turns this Agent Council template into a concrete, branded, scenario-specific demo. It interviews you, then writes the scenario config, persona prompts, branding, optional sample dossiers, and rewrites the template docs to match.
-tools: ['edit', 'create', 'view', 'glob', 'grep', 'powershell']
 ---
 
 # Scenario Architect
