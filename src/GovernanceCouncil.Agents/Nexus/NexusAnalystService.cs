@@ -2,6 +2,7 @@ namespace GovernanceCouncil.Agents.Nexus;
 
 using System.Reflection;
 using System.Text.Json;
+using Azure.AI.OpenAI;
 using Azure.AI.Projects;
 using Azure.AI.Extensions.OpenAI;
 using GovernanceCouncil.Agents.Provisioning;
@@ -16,6 +17,7 @@ using Microsoft.Extensions.Logging;
 public sealed class NexusAnalystService
 {
     private readonly AIProjectClient _projectClient;
+    private readonly AzureOpenAIClient _azureOpenAI;
     private readonly IAssessmentStore _assessmentStore;
     private readonly INexusStore _nexusStore;
     private readonly ILogger<NexusAnalystService> _logger;
@@ -31,11 +33,13 @@ public sealed class NexusAnalystService
 
     public NexusAnalystService(
         AIProjectClient projectClient,
+        AzureOpenAIClient azureOpenAI,
         IAssessmentStore assessmentStore,
         INexusStore nexusStore,
         ILogger<NexusAnalystService>? logger = null)
     {
         _projectClient = projectClient;
+        _azureOpenAI = azureOpenAI;
         _assessmentStore = assessmentStore;
         _nexusStore = nexusStore;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<NexusAnalystService>.Instance;
@@ -131,7 +135,9 @@ public sealed class NexusAnalystService
     {
         try
         {
-            var client = _projectClient.ProjectOpenAIClient.GetEmbeddingClient(EmbeddingModel);
+            // Use the Azure OpenAI data-plane client (same endpoint that serves the chat models).
+            // The project OpenAI client doesn't expose the embeddings route and returns 404.
+            var client = _azureOpenAI.GetEmbeddingClient(EmbeddingModel);
             var result = await client.GenerateEmbeddingsAsync([text], cancellationToken: ct);
             return result.Value[0].ToFloats().ToArray();
         }

@@ -1,3 +1,4 @@
+using Azure.AI.OpenAI;
 using Azure.AI.Projects;
 using Azure.Identity;
 using GovernanceCouncil.Agents.Ingestion;
@@ -90,11 +91,17 @@ if (isConfigured)
     builder.Services.AddSingleton(aiProjectClient);
 
     builder.Services.AddSingleton<NexusAnalystService>(sp =>
-        new NexusAnalystService(
+    {
+        // Embeddings use the Azure OpenAI data-plane endpoint (same account that serves the chat models).
+        var nexusAoaiEndpoint = Environment.GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT") is { Length: > 0 } e
+            ? e : Environment.GetEnvironmentVariable("AZURE_AI_SERVICES_ENDPOINT");
+        return new NexusAnalystService(
             sp.GetRequiredService<AIProjectClient>(),
+            new AzureOpenAIClient(new Uri(nexusAoaiEndpoint!), credential),
             sp.GetRequiredService<IAssessmentStore>(),
             sp.GetRequiredService<INexusStore>(),
-            logger: sp.GetRequiredService<ILoggerFactory>().CreateLogger<NexusAnalystService>()));
+            logger: sp.GetRequiredService<ILoggerFactory>().CreateLogger<NexusAnalystService>());
+    });
     // Foundry IQ knowledge base data-plane provisioning (Web KS + KB via Azure.Search.Documents).
     var searchServiceEndpoint = Environment.GetEnvironmentVariable("SEARCH_SERVICE_ENDPOINT");
     var aiServicesEndpoint = Environment.GetEnvironmentVariable("AZURE_AI_SERVICES_ENDPOINT");
