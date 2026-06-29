@@ -33,11 +33,20 @@ then add a `config/prompts/<id>.md` for each member.
 ### 2. Provision Azure (Bicep via `azd`)
 
 ```bash
+# (Optional) supply a Microsoft Web IQ key so the Web IQ grounding tool is provisioned.
+# Web IQ is limited-access (preview) — request a key from the Web IQ team. Skip this to run
+# ungrounded, or switch grounding to Foundry IQ in the UI.
+azd env set WEBIQ_API_KEY <your-web-iq-key>
+
 azd up
 ```
 
 Provisions Foundry (AI Services + project), model deployments, Cosmos DB, Blob Storage, AI Search, and
-App Insights — all **identity-based (zero keys)**. Post-provision hooks write a local `.env`.
+App Insights — all **identity-based (zero keys)**. The Web IQ key (if set) flows into Bicep
+(`main.parameters.json` reads `${WEBIQ_API_KEY}`) → Key Vault + a CustomKeys connection. Post-provision
+hooks write a local `.env`; for **local MAF mode** also add `WEBIQ_API_KEY=<key>` to
+`src/GovernanceCouncil.Web/.env`. (Keyless alternative: bind the project MI in the Web IQ portal and use
+AAD, scope `https://api.microsoft.ai/.default`.)
 
 ### 3. Run locally
 
