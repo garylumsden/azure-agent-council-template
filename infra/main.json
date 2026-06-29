@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.1.21952",
-      "templateHash": "491129235920251425"
+      "templateHash": "9859595458188195401"
     }
   },
   "parameters": {
@@ -1939,10 +1939,6 @@
     "COUNCIL_FAST_MODEL": {
       "type": "string",
       "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'resources'), '2025-04-01').outputs.fastDeploymentName.value]"
-    },
-    "COUNCIL_BID_MODEL": {
-      "type": "string",
-      "value": "gpt-5-nano"
     },
     "COUNCIL_EMBEDDING_MODEL": {
       "type": "string",

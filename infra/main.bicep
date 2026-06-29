@@ -120,7 +120,6 @@ output EMBEDDING_DEPLOYMENT_NAME string = resources.outputs.embeddingDeploymentN
 output COUNCIL_REASONING_MODEL string = resources.outputs.fastDeploymentName
 output COUNCIL_SYNTHESIS_MODEL string = resources.outputs.reasoningDeploymentName
 output COUNCIL_FAST_MODEL string = resources.outputs.fastDeploymentName
-output COUNCIL_BID_MODEL string = 'gpt-5-nano'
 output COUNCIL_EMBEDDING_MODEL string = resources.outputs.embeddingDeploymentName
 output KNOWLEDGE_BASE_CONNECTION_NAME string = resources.outputs.knowledgeBaseConnectionName
 output WEBIQ_CONNECTION_NAME string = resources.outputs.webIqConnectionName
