@@ -1,0 +1,49 @@
+namespace GovernanceCouncil.Core.Interfaces;
+
+using GovernanceCouncil.Core.Models;
+
+public interface IDeliberationNotifier
+{
+    Task DeliberationStartedAsync(string deliberationId);
+    Task DeliberationCompleteAsync(string deliberationId, string assessmentId);
+    Task DeliberationErrorAsync(string deliberationId, string error);
+    Task AgentSpeakingAsync(string deliberationId, string agentName);
+    Task AgentResponseChunkAsync(string deliberationId, string agentName, string text);
+    Task AgentCompleteAsync(string deliberationId, string agentName);
+
+    // --- Live debate (hands-up / push-to-talk) events ---
+
+    /// <summary>Announces a new debate phase, e.g. "Independent Assessment", "Debate", "Synthesis".</summary>
+    Task DebatePhaseAsync(string deliberationId, string phase);
+
+    /// <summary>A new debate round has started (1-based) out of a maximum.</summary>
+    Task DebateRoundStartedAsync(string deliberationId, int round, int maxRounds);
+
+    /// <summary>A council member has decided whether to raise their hand to speak this round.</summary>
+    Task AgentHandRaisedAsync(string deliberationId, string agentName, bool wantsToSpeak, string reason);
+
+    /// <summary>The Moderator opens the floor and calls for members to raise their hand this round.</summary>
+    Task ModeratorCallingForSpeakersAsync(string deliberationId, int round);
+
+    /// <summary>
+    /// A single council member has tabled its initial position during the Independent Assessment
+    /// phase. Emitted live, the moment that member's own assessment is parsed, so its initial-position
+    /// card fills in immediately instead of waiting for the whole roll-call to complete.
+    /// </summary>
+    Task MemberAssessedAsync(string deliberationId, MemberPosition position);
+
+    /// <summary>
+    /// The Moderator confirms the Independent Assessment roll-call: every member has given their
+    /// initial position, summarised here as one sentence each.
+    /// </summary>
+    Task ModeratorAssessmentRollCallAsync(string deliberationId, IReadOnlyList<MemberPosition> positions);
+
+    /// <summary>The Moderator has selected the next speaker from those who raised their hand (push-to-talk).</summary>
+    Task ModeratorSelectedSpeakerAsync(string deliberationId, string agentName, string reason);
+
+    /// <summary>Web-grounding citations gathered from an agent's turn.</summary>
+    Task AgentCitationsAsync(string deliberationId, string agentName, IReadOnlyList<Citation> citations);
+
+    /// <summary>The debate has concluded (no further hands, or the round cap was reached).</summary>
+    Task DebateConcludedAsync(string deliberationId, string reason);
+}

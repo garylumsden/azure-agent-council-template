@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "value": "${AZURE_ENV_NAME}"
+    },
+    "location": {
+      "value": "${AZURE_LOCATION}"
+    },
+    "userPrincipalId": {
+      "value": "${AZURE_PRINCIPAL_ID}"
+    },
+    "groundingProvider": {
+      "value": "${COUNCIL_GROUNDING_PROVIDER=webiq}"
+    },
+    "webIqConnectionName": {
+      "value": "${WEBIQ_CONNECTION_NAME=webiq}"
+    },
+    "webIqApiKey": {
+      "value": "${WEBIQ_API_KEY}"
+    }
+  }
+}
