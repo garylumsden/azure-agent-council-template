@@ -78,32 +78,43 @@ public sealed class MafCouncilRuntime : ICouncilRuntime
             ? new ReasoningEffortChatClient(client, effort)
             : client;
 
+    /// <summary>Max grounding-tool calls a single debate turn may make (hard cap; tool-eager models are stopped at this).</summary>
+    private const int MaxSearchCallsPerTurn = 2;
+
     private IChatClient BuildPersonaClient(CouncilMember member)
     {
         // Function-invoking pipeline so grounding tool calls execute automatically in the loop.
-        // Cap iterations so a tool-eager model (notably Grok reasoning) can't loop the grounding tool
-        // dozens of times per turn — bounds Web IQ calls and the per-turn context growth.
+        // Cap iterations so a tool-eager model (notably Grok) can't loop the grounding tool many times
+        // per turn — bounds search calls and the per-turn context growth.
         var pipeline = ModelClient(member.ModelDeployment)
             .AsBuilder()
             .UseFunctionInvocation(configure: c => c.MaximumIterationsPerRequest = 3)
             .Build();
 
-        var tool = GroundingTools.ForMember(member, _grounding);
+        // Per-member, per-turn grounding budget — a hard stop on the number of search calls a single
+        // turn can fire, regardless of how eagerly the model requests the tool.
+        var budget = new GroundingTools.SearchBudget();
+        var tool = GroundingTools.ForMember(member, _grounding, budget);
         var prompt = CouncilPrompts.Load(member);
 
-        var instructions = tool is null
-            ? prompt
-            : prompt + $"""
+        if (tool is null)
+            return new PersonaChatClient(pipeline, prompt, null);
+
+        var instructions = prompt + $"""
 
 
-                ---
+            ---
 
-                Use the `{tool.Name}` tool to gather current, authoritative evidence before you answer,
-                and cite the source URLs it returns. Do not use any other source.
-                """;
+            Use the `{tool.Name}` tool to gather current, authoritative evidence before you answer,
+            and cite the source URLs it returns. Do not use any other source. Call it **at most
+            {MaxSearchCallsPerTurn} times** per turn with focused queries — do not call it repeatedly
+            or once per detail; gather what you need, then answer.
+            """;
 
-        IList<AITool>? tools = tool is null ? null : [tool];
-        return new PersonaChatClient(pipeline, instructions, tools);
+        // Reset the budget once per turn, OUTSIDE the function-invocation loop.
+        return new SearchBudgetResetChatClient(
+            new PersonaChatClient(pipeline, instructions, [tool]),
+            budget, MaxSearchCallsPerTurn);
     }
 
     private IChatClient ModelClient(string deployment) =>

@@ -97,7 +97,9 @@ Everything scenario-specific lives in **`config/`** (read at startup; see
 - **Per-tier reasoning effort** (GPT-5 / o-series): `minimal` bids · `low` members · `medium`
   synthesis. Override with `COUNCIL_REASONING_EFFORT`.
 - **Grounding** (toggle in UI): **Web IQ** or **Foundry IQ**, each scoped to the scenario's
-  authoritative domains (the Chair gets them all). No domains ⇒ ungrounded.
+  authoritative domains (the Chair gets them all). No domains ⇒ ungrounded. In MAF mode the grounding
+  tool is bounded per turn (3-iteration cap + a hard 2-call search budget) so a tool-eager model can't
+  fire dozens of search calls per turn.
 - **Nexus retrieval is efficient**: each assessment's summary is embedded once at creation and stored;
   Top-K candidate retrieval uses **Cosmos DB NoSQL vector search** (no corpus re-embedding).
 - **Live debate** over SignalR: per-seat hand-raises, push-to-talk, citations, a scrolling transcript.

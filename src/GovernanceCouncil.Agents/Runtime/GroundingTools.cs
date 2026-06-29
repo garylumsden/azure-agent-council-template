@@ -35,10 +35,17 @@ internal static class GroundingTools
         ILogger Logger);
 
     /// <summary>
+    /// A per-member, per-turn budget of grounding-tool calls. The runtime resets <see cref="Remaining"/>
+    /// at the start of every turn; each tool invocation decrements it. A tool-eager model (notably Grok)
+    /// is hard-stopped once the budget is exhausted, so a single turn can't fire dozens of search calls.
+    /// </summary>
+    public sealed class SearchBudget { public int Remaining; }
+
+    /// <summary>
     /// Returns the grounding tool for a member, or null when grounding isn't configured for the active
     /// provider (the agent then runs ungrounded — graceful degradation, same as the Foundry path).
     /// </summary>
-    public static AIFunction? ForMember(CouncilMember member, Config cfg)
+    public static AIFunction? ForMember(CouncilMember member, Config cfg, SearchBudget budget)
     {
         // Effective domains for this member (Chair = all). No domains ⇒ no grounding tool (ungrounded):
         // the template never performs free/open web search, so with no authoritative allowlist the
@@ -49,14 +56,14 @@ internal static class GroundingTools
         return Grounding.Active switch
         {
             Grounding.Provider.WebIq when !string.IsNullOrEmpty(cfg.WebIqApiKey) =>
-                BuildWebIqTool(domains, cfg),
+                BuildWebIqTool(domains, cfg, budget),
             Grounding.Provider.FoundryIq when !string.IsNullOrEmpty(cfg.SearchEndpoint) =>
-                BuildKnowledgeBaseTool(cfg),
+                BuildKnowledgeBaseTool(cfg, budget),
             _ => null
         };
     }
 
-    private static AIFunction BuildWebIqTool(IReadOnlyList<string> domains, Config cfg)
+    private static AIFunction BuildWebIqTool(IReadOnlyList<string> domains, Config cfg, SearchBudget budget)
     {
         var siteOps = string.Join(" OR ", domains.Select(d => $"site:{d}"));
 
@@ -64,6 +71,8 @@ internal static class GroundingTools
             [Description("What to look up in the configured authoritative sources.")] string query,
             CancellationToken ct)
         {
+            if (System.Threading.Interlocked.Decrement(ref budget.Remaining) < 0)
+                return "Search budget reached for this turn — do not search again; answer from the evidence already gathered.";
             try
             {
                 using var req = new HttpRequestMessage(HttpMethod.Post, WebIqRestUrl);
@@ -98,7 +107,7 @@ internal static class GroundingTools
                          "via Microsoft Web IQ. Returns ranked passages with source URLs to cite. Use only these sources.");
     }
 
-    private static AIFunction BuildKnowledgeBaseTool(Config cfg)
+    private static AIFunction BuildKnowledgeBaseTool(Config cfg, SearchBudget budget)
     {
         var endpoint = cfg.SearchEndpoint!.TrimEnd('/');
 
@@ -106,6 +115,8 @@ internal static class GroundingTools
             [Description("What to look up in the Foundry IQ knowledge base.")] string query,
             CancellationToken ct)
         {
+            if (System.Threading.Interlocked.Decrement(ref budget.Remaining) < 0)
+                return "Search budget reached for this turn — do not search again; answer from the evidence already gathered.";
             try
             {
                 var token = await cfg.Credential.GetTokenAsync(new TokenRequestContext([SearchAudience]), ct);
