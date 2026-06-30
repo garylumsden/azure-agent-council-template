@@ -103,18 +103,12 @@ internal sealed class ParallelPhase1Runner
                         AssessmentSchema, "council_assessment", "A council member's independent assessment of the dossier.")
                     : null
             };
-            var chunks = new List<string>();
-            var citations = new List<Citation>();
+            ChatResponse? response = null;
             for (var attempt = 0; ; attempt++)
             {
                 try
                 {
-                    chunks.Clear(); citations.Clear();
-                    await foreach (var update in chatClient.GetStreamingResponseAsync(messages, options, cancellationToken: ct))
-                    {
-                        if (!string.IsNullOrEmpty(update.Text)) chunks.Add(update.Text);
-                        citations.AddRange(CitationCollector.Extract(update.Contents));
-                    }
+                    response = await chatClient.GetResponseAsync(messages, options, cancellationToken: ct);
                     break;
                 }
                 catch (System.ClientModel.ClientResultException ex) when ((ex.Status == 429 || ex.Status >= 500) && attempt < 3)
@@ -123,7 +117,18 @@ internal sealed class ParallelPhase1Runner
                 }
             }
 
-            var raw = string.Join("", chunks);
+            // A filtered completion can come back as a ContentFilter finish rather than a thrown 400 —
+            // surface it the same way (the thrown / prompt-blocked case is handled in the outer catch).
+            if (response?.FinishReason == ChatFinishReason.ContentFilter)
+            {
+                _logger.LogWarning("Independent Assessment: {AgentName} output filtered (FinishReason=ContentFilter)", agentName);
+                await _notifier.ContentSafetyTriggeredAsync(deliberationId, agentName, "output");
+                await _notifier.AgentCompleteAsync(deliberationId, agentName);
+                return new MemberAssessment(agentName, "", "", null);
+            }
+
+            var raw = response?.Text ?? "";
+            var citations = CitationCollector.Extract(response?.Messages.SelectMany(m => m.Contents) ?? []);
 
             // Parse the {summary, detail, stance} contract. Discard bid-format JSON, unparseable
             // output, or an empty detail (RunAsync skips empties; the roll-call tolerates fewer members).

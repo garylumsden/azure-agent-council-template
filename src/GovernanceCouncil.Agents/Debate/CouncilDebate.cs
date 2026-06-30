@@ -326,24 +326,22 @@ internal sealed class CouncilDebate
                     : null
             };
 
-            // Accumulate the full response WITHOUT forwarding raw chunks — the client must never see
-            // live raw JSON. We emit a single parsed `detail` chunk after completion. Buffer with a
-            // transient-retry so a Grok 429/5xx mid-stream doesn't lose the whole turn.
-            var chunks = new List<string>();
-            var citations = new List<Citation>();
-            await ModelRetry.OnTransient(async () =>
-            {
-                chunks.Clear(); citations.Clear();
-                await foreach (var update in chatClient.GetStreamingResponseAsync(
-                    [new ChatMessage(ChatRole.User, prompt)], options, ct))
-                {
-                    if (!string.IsNullOrEmpty(update.Text)) chunks.Add(update.Text);
-                    citations.AddRange(CitationCollector.Extract(update.Contents));
-                }
-                return true;
-            }, ct);
+            // The spoken turn is structured JSON we parse before showing (the chamber must never see raw
+            // JSON), so there's nothing to render token-by-token — use a single non-streaming call,
+            // wrapped in the transient retry so a Grok 429/5xx doesn't lose the turn.
+            var response = await ModelRetry.OnTransient(() => chatClient.GetResponseAsync(
+                [new ChatMessage(ChatRole.User, prompt)], options, ct), ct);
 
-            var raw = string.Join("", chunks);
+            if (response.FinishReason == ChatFinishReason.ContentFilter)
+            {
+                _logger.LogWarning("Speaker {Agent} output filtered (FinishReason=ContentFilter)", agentName);
+                await _notifier.ContentSafetyTriggeredAsync(deliberationId, agentName, "output");
+                await _notifier.AgentCompleteAsync(deliberationId, agentName);
+                return "";
+            }
+
+            var raw = response.Text ?? "";
+            var citations = CitationCollector.Extract(response.Messages.SelectMany(m => m.Contents));
 
             // Parse the {summary, detail} contract. Discard bid-format JSON, unparseable output, or
             // an empty detail so it never enters the transcript (caller skips empty text).
@@ -411,26 +409,34 @@ internal sealed class CouncilDebate
 
             await _notifier.AgentSpeakingAsync(deliberationId, ChairName);
 
-            // Structured Outputs: enforce the Chair's Assessment schema.
-            var options = new ChatOptions
+            // The synthesis output is structured JSON we parse before showing — nothing is rendered live
+            // (the chamber shows a "finalising" placeholder), so use a single non-streaming call. Retry
+            // ONCE with a higher token cap if truncated (FinishReason == Length); a ContentFilter finish
+            // means the output was filtered → surface it as a content-safety block.
+            ChatResponse? response = null;
+            for (var attempt = 0; attempt < 2; attempt++)
             {
-                ResponseFormat = CouncilModels.UseStructuredOutputs
-                    ? ChatResponseFormat.ForJsonSchema(DebateSchemas.Chair, "council_assessment", "The Council Chair's final structured Assessment.")
-                    : null
-            };
-            var chunks = new List<string>();
-            await foreach (var update in chair.GetStreamingResponseAsync(
-                [new ChatMessage(ChatRole.User, prompt)], options, ct))
-            {
-                if (!string.IsNullOrEmpty(update.Text))
+                var options = new ChatOptions
                 {
-                    chunks.Add(update.Text);
-                    await _notifier.AgentResponseChunkAsync(deliberationId, ChairName, update.Text);
-                }
+                    ResponseFormat = CouncilModels.UseStructuredOutputs
+                        ? ChatResponseFormat.ForJsonSchema(DebateSchemas.Chair, "council_assessment", "The Council Chair's final structured Assessment.")
+                        : null,
+                    // First pass uses the model default; on truncation, retry with a generous cap.
+                    MaxOutputTokens = attempt == 0 ? null : 16000
+                };
+                response = await chair.GetResponseAsync([new ChatMessage(ChatRole.User, prompt)], options, ct);
+                if (response.FinishReason != ChatFinishReason.Length) break;
+                _logger.LogWarning("Chair synthesis truncated (FinishReason=Length); retrying with a higher token cap.");
             }
 
             await _notifier.AgentCompleteAsync(deliberationId, ChairName);
-            var text = string.Join("", chunks);
+
+            if (response?.FinishReason == ChatFinishReason.ContentFilter)
+            {
+                _logger.LogWarning("Chair synthesis output filtered (FinishReason=ContentFilter).");
+                return ContentSafety.BlockedMarker;
+            }
+            var text = response?.Text ?? "";
             return string.IsNullOrWhiteSpace(text) ? "{}" : text;
         }
         catch (Exception ex) when (!ct.IsCancellationRequested)
