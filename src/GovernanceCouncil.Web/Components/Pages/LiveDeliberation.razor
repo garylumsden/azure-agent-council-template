@@ -56,14 +56,14 @@
             @if (_assessmentConfirmed)
             {
                 <div class="moderator-banner selected" role="status" aria-live="polite">
-                    🧑‍⚖️ <strong>Moderator</strong> — all @_assessmentCount initial positions received. Opening the debate.
+                    🧑‍⚖️ <strong>@ModeratorLabel</strong> — all @_assessmentCount initial positions received. Opening the debate.
                 </div>
             }
             else
             {
                 var assessingCount = _agentStates.Values.Count(s => s.Assessing);
                 <div class="moderator-banner calling" role="status" aria-live="polite">
-                    🧑‍⚖️ <strong>Moderator</strong> — members, please table your initial positions.
+                    🧑‍⚖️ <strong>@ModeratorLabel</strong> — members, please table your initial positions.
                     @if (assessingCount > 0)
                     {
                         <span class="hands-count">✍️ @assessingCount forming…</span>
@@ -75,7 +75,7 @@
         {
             var raisedCount = _agentStates.Values.Count(s => s.HandRaised);
             <div class="moderator-banner calling" role="status" aria-live="polite">
-                🧑‍⚖️ <strong>Moderator</strong> — the floor is open. Who wishes to speak in round @_round?
+                🧑‍⚖️ <strong>@ModeratorLabel</strong> — the floor is open. Who wishes to speak in round @_round?
                 @if (raisedCount > 0)
                 {
                     <span class="hands-count">✋ @raisedCount raised — hover a hand to see why</span>
@@ -85,7 +85,7 @@
         else if (_activeSpeaker is not null && !string.IsNullOrWhiteSpace(_moderatorCallReason))
         {
             <div class="moderator-banner selected" role="status" aria-live="polite">
-                🧑‍⚖️ <strong>Moderator</strong> calls on <strong>@SpeakerName(_activeSpeaker)</strong> — <em>@_moderatorCallReason</em>
+                🧑‍⚖️ <strong>@ModeratorLabel</strong> calls on <strong>@SpeakerName(_activeSpeaker)</strong> — <em>@_moderatorCallReason</em>
             </div>
         }
     }
@@ -265,6 +265,17 @@
     // Always label by the configured display name (Persona.Name); fall back to the raw key, never a role.
     private static string SpeakerName(string key) =>
         CouncilMembers.ByAgentName(key)?.Name ?? key;
+
+    // The Moderator labelled by its configured display name, e.g. "Bob (Moderator)". Falls back to the
+    // plain role when the scenario has no moderator name.
+    private static string ModeratorLabel
+    {
+        get
+        {
+            var name = CouncilMembers.Moderator.Name;
+            return string.IsNullOrWhiteSpace(name) ? "Moderator" : $"{name} (Moderator)";
+        }
+    }
 
     // Deterministic initials from a display name: handles single/multi-word and non-Latin names.
     private static string SeatInitials(string? name)
