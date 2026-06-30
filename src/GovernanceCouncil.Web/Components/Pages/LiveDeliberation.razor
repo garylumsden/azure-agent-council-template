@@ -655,15 +655,13 @@
             s.IsSpeaking = false;
             s.MicLive = false;
             _contentSafetyBlocked[SpeakerName(agentName)] = 1;
-            // Mark this speaker's live transcript turn as blocked so it stops showing "Taking the floor…"
-            // and instead states clearly that the contribution was blocked by the content-safety policy.
-            var turn = _currentTurn is not null && string.Equals(_currentTurn.AgentKey, agentName, StringComparison.OrdinalIgnoreCase)
-                ? _currentTurn
-                : _turns.LastOrDefault(t => string.Equals(t.AgentKey, agentName, StringComparison.OrdinalIgnoreCase) && !t.IsAssessment && !t.IsNexus);
-            if (turn is not null)
+            // Mark this speaker's CURRENT live turn as blocked so it stops showing "Taking the floor…" /
+            // "finalising" and instead states it was blocked. Only the active turn — a blocked bid (no
+            // active turn for that member) must not retro-flag an earlier speech.
+            if (_currentTurn is not null && string.Equals(_currentTurn.AgentKey, agentName, StringComparison.OrdinalIgnoreCase))
             {
-                turn.Blocked = true;
-                turn.Speaking = false;
+                _currentTurn.Blocked = true;
+                _currentTurn.Speaking = false;
             }
             InvokeAsync(StateHasChanged);
         });

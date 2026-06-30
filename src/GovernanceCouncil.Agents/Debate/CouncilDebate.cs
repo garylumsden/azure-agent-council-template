@@ -171,7 +171,7 @@ internal sealed class CouncilDebate
 
             await gate.WaitAsync(ct);
             Bid bid;
-            try { bid = await AskBidAsync(client, question, ct); }
+            try { bid = await AskBidAsync(deliberationId, name, client, question, ct); }
             finally { gate.Release(); }
             await _notifier.AgentHandRaisedAsync(deliberationId, name, bid.Speak, bid.Reason);
             return (AgentName: name, Bid: bid);
@@ -189,7 +189,7 @@ internal sealed class CouncilDebate
         return results.ToList();
     }
 
-    private async Task<Bid> AskBidAsync(IChatClient memberClient, string question, CancellationToken ct)
+    private async Task<Bid> AskBidAsync(string deliberationId, string agentName, IChatClient memberClient, string question, CancellationToken ct)
     {
         try
         {
@@ -210,7 +210,17 @@ internal sealed class CouncilDebate
         }
         catch (Exception ex) when (!ct.IsCancellationRequested)
         {
-            _logger.LogWarning(ex, "Bid call failed; treating as no-bid");
+            if (ContentSafety.IsContentFilterBlock(ex))
+            {
+                // The member couldn't even bid this round because their input was content-filtered —
+                // surface it so the trigger is visible, then treat as a no-bid.
+                _logger.LogWarning("Bid blocked by the content-safety policy for {Agent} ({Scope})", agentName, ContentSafety.Scope(ex));
+                await _notifier.ContentSafetyTriggeredAsync(deliberationId, agentName, ContentSafety.Scope(ex));
+            }
+            else
+            {
+                _logger.LogWarning(ex, "Bid call failed; treating as no-bid");
+            }
             return new Bid(false, "bid error", 1);
         }
     }
@@ -434,6 +444,7 @@ internal sealed class CouncilDebate
             if (response?.FinishReason == ChatFinishReason.ContentFilter)
             {
                 _logger.LogWarning("Chair synthesis output filtered (FinishReason=ContentFilter).");
+                await _notifier.ContentSafetyTriggeredAsync(deliberationId, ChairName, "output");
                 return ContentSafety.BlockedMarker;
             }
             var text = response?.Text ?? "";
@@ -445,6 +456,7 @@ internal sealed class CouncilDebate
             if (ContentSafety.IsContentFilterBlock(ex))
             {
                 _logger.LogWarning(ex, "Chair synthesis blocked by the content-safety policy");
+                await _notifier.ContentSafetyTriggeredAsync(deliberationId, ChairName, ContentSafety.Scope(ex));
                 return ContentSafety.BlockedMarker;
             }
             _logger.LogError(ex, "Chair synthesis failed");

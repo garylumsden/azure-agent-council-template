@@ -144,7 +144,15 @@
                     <div class="turn-body">
                         @if (turn.IsSynthesis)
                         {
-                            @if (Completed && !string.IsNullOrEmpty(AssessmentHref))
+                            @if (turn.Blocked)
+                            {
+                                <span class="text-danger">🛡️ The Chair's synthesis was blocked by the content-safety policy.</span>
+                                @if (Completed && !string.IsNullOrEmpty(AssessmentHref))
+                                {
+                                    <a href="@AssessmentHref" class="btn btn-sm btn-outline-secondary ms-2">View details →</a>
+                                }
+                            }
+                            else if (Completed && !string.IsNullOrEmpty(AssessmentHref))
                             {
                                 <span class="chair-done">✅ The Chair has delivered the Assessment.</span>
                                 <a href="@AssessmentHref" class="btn btn-sm btn-success ms-2">View Assessment →</a>
