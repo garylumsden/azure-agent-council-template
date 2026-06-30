@@ -39,7 +39,7 @@
                 {
                     <span class="hand-popover" role="tooltip">@seat.HandReason</span>
                 }
-                <div class="avatar" style="background:@seat.Colour;" aria-hidden="true">@seat.Initials</div>
+                <div class="avatar" style="background:@seat.Colour;" aria-hidden="true">@AvatarInner(seat.Avatar, seat.Initials)</div>
                 <div class="plaque">
                     <span class="name">@seat.DisplayName</span>
                     <span class="role">@seat.Role</span>
@@ -59,7 +59,7 @@
             <div class="podium @(chair.Speaking ? "speaking" : "") @(chair.MicLive ? "mic-live" : "")">
                 <div class="seat @(chair.Speaking ? "speaking" : "") @(chair.MicLive ? "mic-live" : "")"
                      style="position:static; transform:none; width:auto;">
-                    <div class="avatar" style="background:@chair.Colour;" aria-hidden="true">@chair.Initials</div>
+                    <div class="avatar" style="background:@chair.Colour;" aria-hidden="true">@AvatarInner(chair.Avatar, chair.Initials)</div>
                     <div class="plaque">
                         <span class="name">@chair.DisplayName</span>
                         <span class="role">@chair.Role</span>
@@ -88,7 +88,7 @@
                 var failed = !done && !blocked && AssessmentConfirmed;
                 <div class="rc-card @(done ? "done" : blocked ? "blocked" : failed ? "failed" : seat.Assessing ? "assessing" : "")">
                     <div class="rc-head">
-                        <span class="avatar" style="width:26px;height:26px;font-size:0.72rem;background:@seat.Colour;border-width:1px;" aria-hidden="true">@seat.Initials</span>
+                        <span class="avatar" style="width:26px;height:26px;font-size:0.72rem;background:@seat.Colour;border-width:1px;" aria-hidden="true">@AvatarInner(seat.Avatar, seat.Initials)</span>
                         <span class="rc-name">@seat.DisplayName</span>
                         @if (done)
                         {
@@ -137,7 +137,7 @@
             {
                 <div class="turn @(turn.Speaking ? "speaking" : "")">
                     <div class="turn-head">
-                        <span class="avatar" style="width:26px;height:26px;font-size:0.72rem;background:@turn.Colour;border-width:1px;" aria-hidden="true">@turn.Initials</span>
+                        <span class="avatar" style="width:26px;height:26px;font-size:0.72rem;background:@turn.Colour;border-width:1px;" aria-hidden="true">@AvatarInner(turn.Avatar, turn.Initials)</span>
                         <span class="turn-name">@turn.DisplayName</span>
                         <span class="turn-role text-muted">· @turn.Role</span>
                     </div>
@@ -226,6 +226,24 @@
     private static readonly MarkdownPipeline _mdPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions().Build();
 
+    // Renders the persona avatar image inside the coloured circle, falling back to the initials text
+    // if no avatar URL is present (every persona resolves to a role default, so this is a safety net).
+    private static RenderFragment AvatarInner(string? avatar, string initials) => builder =>
+    {
+        if (!string.IsNullOrEmpty(avatar))
+        {
+            builder.OpenElement(0, "img");
+            builder.AddAttribute(1, "class", "avatar-img");
+            builder.AddAttribute(2, "src", avatar);
+            builder.AddAttribute(3, "alt", "");
+            builder.CloseElement();
+        }
+        else
+        {
+            builder.AddContent(4, initials);
+        }
+    };
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         // Auto-scroll the transcript to the newest turn as content streams in.
@@ -304,6 +322,7 @@
         public required string Role { get; init; }
         public required string Initials { get; init; }
         public required string Colour { get; init; }
+        public string? Avatar { get; init; }
         public bool IsChair { get; init; }
         public bool HandRaised { get; set; }
         public string? HandReason { get; set; }
@@ -321,6 +340,7 @@
         public required string Role { get; init; }
         public required string Initials { get; init; }
         public required string Colour { get; init; }
+        public string? Avatar { get; init; }
         public string? Text { get; set; }
         public bool Speaking { get; set; }
         public bool IsSynthesis { get; set; }

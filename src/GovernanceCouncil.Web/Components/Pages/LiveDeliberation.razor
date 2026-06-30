@@ -242,10 +242,10 @@
 
     // Per-seat presentation derived from a configured persona — never hard-coded. The roster,
     // names, roles, count, and colours all come from the active scenario via CouncilMembers.
-    private sealed record RosterEntry(string Key, string Name, string Role, string Initials, string Colour, bool IsChair = false);
+    private sealed record RosterEntry(string Key, string Name, string Role, string Initials, string Colour, string Avatar, bool IsChair = false);
 
     private static RosterEntry ToEntry(CouncilMember m, bool isChair = false) =>
-        new($"gc-{m.Id}", m.Name, m.Role, SeatInitials(m.Name), SeatColour(m.Id), isChair);
+        new($"gc-{m.Id}", m.Name, m.Role, SeatInitials(m.Name), SeatColour(m.Id), Avatars.For(m), isChair);
 
     // Chamber seats: the scenario's debating members (in order), then the Chair at the podium.
     // Moderator and Nexus Analyst are framework roles and are intentionally not seated.
@@ -333,6 +333,7 @@
                 Role = r.Role,
                 Initials = r.Initials,
                 Colour = r.Colour,
+                Avatar = r.Avatar,
                 IsChair = r.IsChair,
                 HandRaised = st?.HandRaised ?? false,
                 HandReason = st?.HandReason,
@@ -361,6 +362,7 @@
                 Role = member?.Role ?? "",
                 Initials = member is null ? "?" : SeatInitials(member.Name),
                 Colour = member is null ? "#64748b" : SeatColour(member.Id),
+                Avatar = member is not null ? Avatars.For(member) : Avatars.For(t.AgentKey),
                 Text = t.Text,
                 Speaking = t.Speaking,
                 IsSynthesis = t.IsSynthesis,

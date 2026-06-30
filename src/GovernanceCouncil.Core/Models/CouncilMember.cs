@@ -7,7 +7,8 @@ public record CouncilMember(
     string Description,
     CouncilModels.ModelTier Tier,
     string PromptFile,
-    IReadOnlyList<string>? KnowledgeDomains = null
+    IReadOnlyList<string>? KnowledgeDomains = null,
+    string? Avatar = null
 )
 {
     /// <summary>The model deployment for this member under the active profile (resolved live).</summary>

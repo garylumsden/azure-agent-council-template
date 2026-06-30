@@ -91,4 +91,12 @@ public sealed record PersonaConfig
 
     [JsonPropertyName("promptFile")]
     public string PromptFile { get; init; } = "";
+
+    /// <summary>
+    /// Optional avatar image shown in the debate chamber in place of the persona's initials. A path
+    /// served from <c>wwwroot/</c> (e.g. <c>branding/avatars/my-chair.svg</c>) or an absolute URL.
+    /// When empty, a built-in role default is used (chair / moderator / nexus-analyst / member).
+    /// </summary>
+    [JsonPropertyName("avatar")]
+    public string? Avatar { get; init; }
 }

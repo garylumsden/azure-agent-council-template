@@ -145,6 +145,10 @@ src/
 - **Branding / look & feel**: the dark "council chamber" theme lives in `wwwroot/app.css` (CSS custom
   properties). Branding strings + emblem come from `config/scenario.json`; the theme is shared by
   default. Drop an SVG/PNG in `wwwroot/branding/` and point `emblem` at it.
+- **Avatars**: every persona shows an avatar in the chamber (in place of initials). Four role defaults
+  ship in `wwwroot/branding/avatars/` (chair / moderator / nexus / member); override any persona by
+  setting its `avatar` in `config/scenario.json` to a `wwwroot/` path or URL (see
+  `wwwroot/branding/README.md`).
 - **Vocabulary**: the framework's domain language (Dossier / Deliberation / Assessment / Nexus /
   Council) is fixed in code; use your scenario's own words in prompts and sample documents.
 

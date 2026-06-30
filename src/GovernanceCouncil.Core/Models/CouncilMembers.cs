@@ -55,7 +55,8 @@ public static class CouncilMembers
         Description: p.Description,
         Tier: ParseTier(p.Tier),
         PromptFile: p.PromptFile,
-        KnowledgeDomains: p.KnowledgeDomains);
+        KnowledgeDomains: p.KnowledgeDomains,
+        Avatar: p.Avatar);
 
     private static CouncilModels.ModelTier ParseTier(string tier) => tier.Trim().ToLowerInvariant() switch
     {
