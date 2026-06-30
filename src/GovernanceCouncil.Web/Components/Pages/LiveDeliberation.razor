@@ -99,8 +99,7 @@
                 @($"{_contentSafetyBlocked.Count} contribution(s) were blocked by the Responsible AI policy") —
                 <span>@string.Join(", ", _contentSafetyBlocked.Keys)</span>.
                 Those members were skipped; the debate continued with the rest. To allow this content,
-                relax the relevant category (e.g. the Violence content-filter toggle on the dossier page)
-                and re-run.
+                set the Content safety control on the dossier page to a more permissive level and re-run.
             </div>
         </div>
     }
@@ -165,7 +164,7 @@
 @code {
     [Parameter] public string DeliberationId { get; set; } = "";
     [SupplyParameterFromQuery] public string? DossierId { get; set; }
-    [SupplyParameterFromQuery] public string? Violence { get; set; }
+    [SupplyParameterFromQuery(Name = "cs")] public string? Safety { get; set; }
 
     private Deliberation? _deliberation;
     private Dossier? _dossier;
@@ -205,6 +204,7 @@
         public bool IsAssessment { get; set; }
         public bool IsNexus { get; set; }
         public int? NexusCount { get; set; }
+        public bool Blocked { get; set; }
         public List<Citation> Citations { get; } = new();
     }
 
@@ -346,6 +346,7 @@
                 IsAssessment = t.IsAssessment,
                 IsNexus = t.IsNexus,
                 NexusCount = t.NexusCount,
+                Blocked = t.Blocked,
                 Citations = t.Citations.Count > 0 ? t.Citations : null,
             });
         }
@@ -628,7 +629,19 @@
             var s = GetOrAdd(agentName);
             s.Blocked = true;
             s.Assessing = false;
+            s.IsSpeaking = false;
+            s.MicLive = false;
             _contentSafetyBlocked[SpeakerName(agentName)] = 1;
+            // Mark this speaker's live transcript turn as blocked so it stops showing "Taking the floor…"
+            // and instead states clearly that the contribution was blocked by the content-safety policy.
+            var turn = _currentTurn is not null && string.Equals(_currentTurn.AgentKey, agentName, StringComparison.OrdinalIgnoreCase)
+                ? _currentTurn
+                : _turns.LastOrDefault(t => string.Equals(t.AgentKey, agentName, StringComparison.OrdinalIgnoreCase) && !t.IsAssessment && !t.IsNexus);
+            if (turn is not null)
+            {
+                turn.Blocked = true;
+                turn.Speaking = false;
+            }
             InvokeAsync(StateHasChanged);
         });
 
@@ -640,7 +653,7 @@
         // Guard on IsInteractive so the prerender pass doesn't start it before the real circuit joins.
         if (RendererInfo.IsInteractive && _deliberation is { Status: DeliberationStatus.Pending })
         {
-            Orchestrator.StartDeliberationOnce(_deliberation.DossierId, DeliberationId, Violence);
+            Orchestrator.StartDeliberationOnce(_deliberation.DossierId, DeliberationId, Safety);
         }
 
         _pollTimer = new System.Threading.Timer(async _ =>

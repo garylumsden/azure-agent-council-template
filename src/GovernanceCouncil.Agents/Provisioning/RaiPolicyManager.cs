@@ -75,13 +75,13 @@ public sealed class RaiPolicyManager
 
             if (string.Equals(CurrentViolence(current), target, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogInformation("RAI toggle: Violence already at '{Target}' — no change.", target);
+                _logger.LogInformation("Content-safety toggle: already at '{Target}' — no change.", target);
                 return;
             }
 
             SetViolence(current, target);
             await PutPolicyAsync(url, token, current, ct);
-            _logger.LogInformation("RAI toggle: Violence threshold set to '{Target}'. Waiting for propagation…", target);
+            _logger.LogInformation("Content-safety toggle: threshold set to '{Target}'. Waiting for propagation…", target);
 
             // Poll until the control plane reflects the change, then a short settle for the data plane.
             for (var i = 0; i < 6; i++)
@@ -94,7 +94,7 @@ public sealed class RaiPolicyManager
                     return;
                 }
             }
-            _logger.LogWarning("RAI toggle: Violence='{Target}' not confirmed within the wait window; proceeding anyway.", target);
+            _logger.LogWarning("Content-safety toggle: '{Target}' not confirmed within the wait window; proceeding anyway.", target);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)

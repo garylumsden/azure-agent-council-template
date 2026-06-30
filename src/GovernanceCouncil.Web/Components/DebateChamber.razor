@@ -169,6 +169,10 @@
                                 <span class="chair-done">🔗 @turn.DisplayName found @turn.NexusCount connection@(turn.NexusCount == 1 ? "" : "s") to prior decisions.</span>
                             }
                         }
+                        else if (turn.Blocked)
+                        {
+                            <span class="text-danger">🛡️ This contribution was blocked by the content-safety policy.</span>
+                        }
                         else if (string.IsNullOrWhiteSpace(turn.Text))
                         {
                             <em class="text-muted">@(turn.IsAssessment ? "forming initial position…" : "Taking the floor…")</em>
@@ -177,7 +181,7 @@
                         {
                             @((MarkupString)Markdown.ToHtml(ModelText.StripSourceAnnotations(turn.Text), _mdPipeline))
                         }
-                        @if (turn.Speaking && !turn.IsSynthesis && !turn.IsNexus)
+                        @if (turn.Speaking && !turn.IsSynthesis && !turn.IsNexus && !turn.Blocked)
                         {
                             <span class="caret" aria-hidden="true"></span>
                         }
@@ -323,6 +327,7 @@
         public bool IsAssessment { get; set; }
         public bool IsNexus { get; set; }
         public int? NexusCount { get; set; }
+        public bool Blocked { get; set; }
         public IReadOnlyList<Citation>? Citations { get; set; }
     }
 }

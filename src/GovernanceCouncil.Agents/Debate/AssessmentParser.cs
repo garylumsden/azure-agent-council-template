@@ -160,9 +160,8 @@ internal static class AssessmentParser
                 "The Council reached a verdict but the Chair's final assessment could not be read back: " +
                 "the structured output was incomplete (it was likely truncated, or cut short by the " +
                 "content-safety policy filtering the response). Re-run the deliberation; if it recurs on " +
-                "the same dossier, the content may be triggering the Responsible AI filter — relax the " +
-                "relevant category (e.g. `azd env set COUNCIL_CONTENT_VIOLENCE_THRESHOLD High`) or use " +
-                "the Violence content-filter toggle on the dossier page, then try again.",
+                "the same dossier, the content may be triggering the Responsible AI filter — set the " +
+                "Content safety control on the dossier page to a more permissive level, then try again.",
             Participants = null,
             DeliberationSummary = null,
             Votes = new Dictionary<string, MemberVote>(),
@@ -193,9 +192,9 @@ internal static class AssessmentParser
                 "The Council could not deliver a full assessment: the Chair's synthesis was blocked by " +
                 "the configured content-safety (Responsible AI) policy, meaning the deliberation content " +
                 "was rated at or above the policy's blocking threshold. If this content is expected for " +
-                "your scenario, relax the relevant category (e.g. `azd env set " +
-                "COUNCIL_CONTENT_VIOLENCE_THRESHOLD High`) and re-run the deliberation — note this " +
-                "requires a subscription approved for modified content filters (Azure OpenAI Limited Access).",
+                "your scenario, set the Content safety control on the dossier page to a more permissive " +
+                "level and re-run the deliberation — note a less restrictive policy requires a " +
+                "subscription approved for modified content filters (Azure OpenAI Limited Access).",
             Participants = null,
             DeliberationSummary = null,
             Votes = new Dictionary<string, MemberVote>(),
