@@ -148,6 +148,36 @@ src/
 - **Vocabulary**: the framework's domain language (Dossier / Deliberation / Assessment / Nexus /
   Council) is fixed in code; use your scenario's own words in prompts and sample documents.
 
+## Content safety (RAI policy)
+
+Every chat model deployment is bound to a custom content-safety policy
+(`Microsoft.CognitiveServices/accounts/raiPolicies`, `infra/`). Its thresholds **default to `Medium`
+for every harm category — identical to `Microsoft.Default`** — so the template ships with standard,
+safe filtering and behaves exactly as the platform default out of the box.
+
+A scenario that produces legitimate content the default filter blocks at `medium` severity (e.g. a
+fictional or adversarial debate) can **relax a category per repo with `azd env set` only — no Bicep
+edits** — then re-provision:
+
+```bash
+azd env set COUNCIL_CONTENT_VIOLENCE_THRESHOLD High   # only block at High; allow Low/Medium
+azd provision
+```
+
+Overridable env vars (each `Low` | `Medium` | `High`, default `Medium`):
+`COUNCIL_CONTENT_HATE_THRESHOLD`, `COUNCIL_CONTENT_SEXUAL_THRESHOLD`,
+`COUNCIL_CONTENT_VIOLENCE_THRESHOLD`, `COUNCIL_CONTENT_SELFHARM_THRESHOLD`
+(plus `COUNCIL_CONTENT_POLICY_NAME` to rename the policy). A higher threshold blocks **less** (only at
+that severity and above). The policy applies to the Foundry agents automatically because they run on
+the bound deployments; its name is surfaced to the app as `COUNCIL_RAI_POLICY_NAME`.
+
+> ⚠️ **Limited Access.** Thresholds **less restrictive than `Microsoft.Default`** (i.e. anything other
+> than the default `Medium` blocking) require your subscription to be **approved for modified content
+> filters** (Azure OpenAI Limited Access — see
+> [Azure OpenAI Limited Access](https://learn.microsoft.com/azure/ai-foundry/responsible-ai/openai/limited-access)).
+> Without approval the `raiPolicies` deployment is rejected, so leave the defaults unless your
+> subscription is approved.
+
 ## Conventions
 
 - **.NET 10**, C# 13 idioms (records, primary constructors, file-scoped namespaces).

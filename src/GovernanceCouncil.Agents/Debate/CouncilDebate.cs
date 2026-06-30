@@ -427,8 +427,13 @@ internal sealed class CouncilDebate
         }
         catch (Exception ex) when (!ct.IsCancellationRequested)
         {
-            _logger.LogError(ex, "Chair synthesis failed");
             await _notifier.AgentCompleteAsync(deliberationId, ChairName);
+            if (ContentSafety.IsContentFilterBlock(ex))
+            {
+                _logger.LogWarning(ex, "Chair synthesis blocked by the content-safety policy");
+                return ContentSafety.BlockedMarker;
+            }
+            _logger.LogError(ex, "Chair synthesis failed");
             return "{}";
         }
     }

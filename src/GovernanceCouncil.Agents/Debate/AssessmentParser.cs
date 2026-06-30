@@ -124,4 +124,38 @@ internal static class AssessmentParser
             Status = "Completed"
         };
     }
+
+    /// <summary>
+    /// Builds a graceful "Defer" Assessment for when the Chair's synthesis was blocked by the
+    /// content-safety (RAI) policy, so the deliberation completes with clear, honest feedback (shown
+    /// in the Chair Summary) instead of a hard failure. No fabricated votes/risks are invented.
+    /// </summary>
+    public static Assessment ContentFilteredFallback(string dossierId, string dossierTitle, string deliberationId)
+    {
+        var assessmentId = $"AS-{DateTime.UtcNow:yyyy}-{Guid.NewGuid().ToString("N")[..8]}";
+        return new Assessment
+        {
+            Id = assessmentId,
+            AssessmentId = assessmentId,
+            DossierId = dossierId,
+            DossierTitle = dossierTitle,
+            DeliberationId = deliberationId,
+            ReviewDate = DateTimeOffset.UtcNow,
+            OverallRecommendation = "Defer",
+            ChairSummary =
+                "The Council could not deliver a full assessment: the Chair's synthesis was blocked by " +
+                "the configured content-safety (Responsible AI) policy, meaning the deliberation content " +
+                "was rated at or above the policy's blocking threshold. If this content is expected for " +
+                "your scenario, relax the relevant category (e.g. `azd env set " +
+                "COUNCIL_CONTENT_VIOLENCE_THRESHOLD High`) and re-run the deliberation — note this " +
+                "requires a subscription approved for modified content filters (Azure OpenAI Limited Access).",
+            Participants = null,
+            DeliberationSummary = null,
+            Votes = new Dictionary<string, MemberVote>(),
+            Conditions = new List<string>(),
+            Dissent = new List<Dissent>(),
+            Risks = new List<Risk>(),
+            Status = "Completed"
+        };
+    }
 }

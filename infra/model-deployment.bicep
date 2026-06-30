@@ -24,6 +24,9 @@ param skuName string = 'GlobalStandard'
 @description('SKU capacity')
 param skuCapacity int
 
+@description('Custom RAI (content-safety) policy to bind to this deployment. Empty ⇒ account default.')
+param raiPolicyName string = ''
+
 resource aiServices 'Microsoft.CognitiveServices/accounts@2025-09-01' existing = {
   name: aiServicesName
 }
@@ -41,6 +44,7 @@ resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2025-09-01
       name: modelName
       version: !empty(modelVersion) ? modelVersion : null
     }
+    raiPolicyName: !empty(raiPolicyName) ? raiPolicyName : null
   }
 }
 

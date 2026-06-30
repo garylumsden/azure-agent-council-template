@@ -172,15 +172,31 @@ public sealed class CouncilOrchestrator
             // unified tooled+grounded Foundry agents from the startup cache.
             var debate = new CouncilDebate(_runtimes.Active, _notifier, _logger);
             var (assessmentText, transcript) = await debate.RunAsync(deliberationId, dossierPrompt, ct);
-            if (string.IsNullOrWhiteSpace(assessmentText) || assessmentText == "{}")
+
+            // A content-safety (RAI) block is a non-response, not a failure: complete with a graceful
+            // "Defer" assessment whose Chair Summary tells the user clearly what happened (and how to
+            // relax the policy) rather than throwing the generic no-Assessment error.
+            var contentFiltered = assessmentText == ContentSafety.BlockedMarker;
+            Assessment assessment;
+            if (contentFiltered)
+            {
+                _logger.LogWarning("Deliberation {DeliberationId}: Chair synthesis blocked by the content-safety policy — returning a graceful Defer assessment", deliberationId);
+                assessment = AssessmentParser.ContentFilteredFallback(dossierId, dossier.Title, deliberationId);
+            }
+            else if (string.IsNullOrWhiteSpace(assessmentText) || assessmentText == "{}")
             {
                 _logger.LogWarning("Council debate returned empty assessment. Transcript entries: {Count}", transcript.Count);
                 throw new InvalidOperationException("Council debate completed but the Chair did not produce an Assessment.");
             }
-            var assessment = AssessmentParser.Parse(assessmentText, dossierId, dossier.Title, deliberationId);
+            else
+            {
+                assessment = AssessmentParser.Parse(assessmentText, dossierId, dossier.Title, deliberationId);
+            }
 
             // Embed once at creation so nexus Top-K is a cheap Cosmos vector query (no re-embedding).
-            if (_nexusAnalyst is not null)
+            // Skip for the content-filtered fallback: its summary is boilerplate, so an embedding +
+            // nexus pass would only add noise.
+            if (_nexusAnalyst is not null && !contentFiltered)
             {
                 var embedding = await _nexusAnalyst.EmbedAssessmentAsync(assessment, ct);
                 if (embedding is not null)
@@ -191,7 +207,7 @@ public sealed class CouncilOrchestrator
 
             // Post-deliberation nexus discovery — must never fail the deliberation. Surfaced in the
             // live thread (running → found N) the same way the Chair's synthesis turn is.
-            if (_nexusAnalyst is not null)
+            if (_nexusAnalyst is not null && !contentFiltered)
             {
                 var nexusKey = $"gc-{CouncilMembers.NexusAnalyst.Id}";
                 try

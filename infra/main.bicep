@@ -61,6 +61,28 @@ param webIqMcpUrl string = 'https://api.microsoft.ai/v3/mcp'
 @secure()
 param webIqApiKey string = ''
 
+// --- Content safety (RAI) policy — overridable per scenario via azd env -----
+// Thresholds default to 'Medium' (= Microsoft.Default), so the template is unchanged out of the box.
+
+@description('Name of the custom content-safety (RAI) policy bound to chat model deployments.')
+param contentPolicyName string = 'agent-council-content-policy'
+
+@allowed(['Low', 'Medium', 'High'])
+@description('Hate harm-category severity threshold to block at (Medium = Microsoft.Default).')
+param hateSeverityThreshold string = 'Medium'
+
+@allowed(['Low', 'Medium', 'High'])
+@description('Sexual harm-category severity threshold to block at (Medium = Microsoft.Default).')
+param sexualSeverityThreshold string = 'Medium'
+
+@allowed(['Low', 'Medium', 'High'])
+@description('Violence harm-category severity threshold to block at (Medium = Microsoft.Default).')
+param violenceSeverityThreshold string = 'Medium'
+
+@allowed(['Low', 'Medium', 'High'])
+@description('Self-harm harm-category severity threshold to block at (Medium = Microsoft.Default).')
+param selfHarmSeverityThreshold string = 'Medium'
+
 // --- Variables -------------------------------------------------------------
 
 var tags = {
@@ -102,6 +124,11 @@ module resources 'resources.bicep' = {
     webIqConnectionName: webIqConnectionName
     webIqMcpUrl: webIqMcpUrl
     webIqApiKey: webIqApiKey
+    contentPolicyName: contentPolicyName
+    hateSeverityThreshold: hateSeverityThreshold
+    sexualSeverityThreshold: sexualSeverityThreshold
+    violenceSeverityThreshold: violenceSeverityThreshold
+    selfHarmSeverityThreshold: selfHarmSeverityThreshold
     tags: tags
   }
 }
@@ -131,3 +158,4 @@ output STORAGE_ACCOUNT_NAME string = resources.outputs.storageAccountName
 output SEARCH_SERVICE_ENDPOINT string = resources.outputs.searchServiceEndpoint
 output SEARCH_SERVICE_NAME string = resources.outputs.searchServiceName
 output APPINSIGHTS_CONNECTION_STRING string = resources.outputs.appInsightsConnectionString
+output RAI_POLICY_NAME string = resources.outputs.raiPolicyName

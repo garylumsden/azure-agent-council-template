@@ -117,6 +117,21 @@ public static class CouncilModels
     }
 
     /// <summary>
+    /// Whether a deployment accepts the reasoning-effort setting on the Foundry **Responses API / Prompt
+    /// Agent** surface (the <c>definition.reasoning.effort</c> object), as opposed to Chat Completions'
+    /// flat <c>reasoning_effort</c>. xAI <c>grok-4.3</c> honours <c>reasoning_effort</c> on Chat
+    /// Completions (local MAF) but REJECTS the <c>reasoning</c> object on the Responses API, so Grok is
+    /// excluded here while remaining enabled in <see cref="SupportsReasoningEffort"/>. Use this for
+    /// Foundry Prompt Agents; use <see cref="SupportsReasoningEffort"/> for in-process MAF chat clients.
+    /// </summary>
+    public static bool SupportsResponsesReasoningEffort(string deployment)
+    {
+        var d = (deployment ?? "").Trim().ToLowerInvariant();
+        if (d.Contains("grok")) return false;
+        return SupportsReasoningEffort(d);
+    }
+
+    /// <summary>
     /// Normalises a reasoning-effort value for a specific model. xAI Grok accepts
     /// <c>none/low/medium/high</c> (no <c>minimal</c>), so our <c>minimal</c> maps to <c>none</c> there.
     /// </summary>

@@ -19,6 +19,21 @@
     },
     "webIqApiKey": {
       "value": "${WEBIQ_API_KEY}"
+    },
+    "contentPolicyName": {
+      "value": "${COUNCIL_CONTENT_POLICY_NAME=agent-council-content-policy}"
+    },
+    "hateSeverityThreshold": {
+      "value": "${COUNCIL_CONTENT_HATE_THRESHOLD=Medium}"
+    },
+    "sexualSeverityThreshold": {
+      "value": "${COUNCIL_CONTENT_SEXUAL_THRESHOLD=Medium}"
+    },
+    "violenceSeverityThreshold": {
+      "value": "${COUNCIL_CONTENT_VIOLENCE_THRESHOLD=Medium}"
+    },
+    "selfHarmSeverityThreshold": {
+      "value": "${COUNCIL_CONTENT_SELFHARM_THRESHOLD=Medium}"
     }
   }
 }

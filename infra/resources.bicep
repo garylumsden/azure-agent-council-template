@@ -59,6 +59,32 @@ param webIqMcpUrl string = 'https://api.microsoft.ai/v3/mcp'
 @secure()
 param webIqApiKey string = ''
 
+// --- Content safety (RAI) policy -------------------------------------------
+// A custom content-filter policy bound to every chat model deployment. Thresholds default to
+// 'Medium' = Microsoft.Default behaviour, so the template is unchanged out of the box. A derived
+// scenario relaxes a category via `azd env set` only (e.g. COUNCIL_CONTENT_VIOLENCE_THRESHOLD=High).
+// NOTE: thresholds LESS restrictive than Microsoft.Default require the subscription to be approved
+// for modified content filters (Azure OpenAI Limited Access), else the raiPolicies deploy is rejected.
+
+@description('Name of the custom content-safety (RAI) policy bound to chat model deployments.')
+param contentPolicyName string = 'agent-council-content-policy'
+
+@allowed(['Low', 'Medium', 'High'])
+@description('Hate harm-category severity threshold to block at (Medium = Microsoft.Default).')
+param hateSeverityThreshold string = 'Medium'
+
+@allowed(['Low', 'Medium', 'High'])
+@description('Sexual harm-category severity threshold to block at (Medium = Microsoft.Default).')
+param sexualSeverityThreshold string = 'Medium'
+
+@allowed(['Low', 'Medium', 'High'])
+@description('Violence harm-category severity threshold to block at (Medium = Microsoft.Default).')
+param violenceSeverityThreshold string = 'Medium'
+
+@allowed(['Low', 'Medium', 'High'])
+@description('Self-harm harm-category severity threshold to block at (Medium = Microsoft.Default).')
+param selfHarmSeverityThreshold string = 'Medium'
+
 // --- Variables -------------------------------------------------------------
 
 var uniqueSuffix = uniqueString(resourceGroup().id, environmentName)
@@ -116,6 +142,29 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2025-09-01' = {
   }
 }
 
+// --- Custom content-safety (RAI) policy ------------------------------------
+// Bound to every chat deployment below. Defaults (all 'Medium') match Microsoft.Default, so the
+// template ships unchanged; scenarios relax a category via azd env (see main.parameters.json).
+
+resource contentPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2025-09-01' = {
+  parent: aiServices
+  name: contentPolicyName
+  properties: {
+    basePolicyName: 'Microsoft.Default'
+    mode: 'Default'
+    contentFilters: [
+      { name: 'Hate', source: 'Prompt', severityThreshold: hateSeverityThreshold, blocking: true, enabled: true }
+      { name: 'Hate', source: 'Completion', severityThreshold: hateSeverityThreshold, blocking: true, enabled: true }
+      { name: 'Sexual', source: 'Prompt', severityThreshold: sexualSeverityThreshold, blocking: true, enabled: true }
+      { name: 'Sexual', source: 'Completion', severityThreshold: sexualSeverityThreshold, blocking: true, enabled: true }
+      { name: 'Violence', source: 'Prompt', severityThreshold: violenceSeverityThreshold, blocking: true, enabled: true }
+      { name: 'Violence', source: 'Completion', severityThreshold: violenceSeverityThreshold, blocking: true, enabled: true }
+      { name: 'Selfharm', source: 'Prompt', severityThreshold: selfHarmSeverityThreshold, blocking: true, enabled: true }
+      { name: 'Selfharm', source: 'Completion', severityThreshold: selfHarmSeverityThreshold, blocking: true, enabled: true }
+    ]
+  }
+}
+
 // --- Model deployments (sequential modules to avoid ETag race conditions) ----
 
 module embeddingDeployment 'model-deployment.bicep' = {
@@ -142,6 +191,7 @@ module reasoningDeployment 'model-deployment.bicep' = {
     modelName: reasoningModelName
     modelVersion: reasoningModelVersion
     skuCapacity: reasoningCapacity
+    raiPolicyName: contentPolicy.name
   }
 }
 
@@ -154,6 +204,7 @@ module fastDeployment 'model-deployment.bicep' = {
     modelName: fastModelName
     modelVersion: fastModelVersion
     skuCapacity: fastCapacity
+    raiPolicyName: contentPolicy.name
   }
 }
 
@@ -167,6 +218,7 @@ module nanoDeployment 'model-deployment.bicep' = {
     modelFormat: 'OpenAI'
     modelVersion: '2025-08-07'
     skuCapacity: fastCapacity
+    raiPolicyName: contentPolicy.name
   }
 }
 
@@ -184,6 +236,7 @@ module grok43Deployment 'model-deployment.bicep' = {
     modelVersion: '1'
     skuName: 'GlobalStandard'
     skuCapacity: 500
+    raiPolicyName: contentPolicy.name
   }
 }
 
@@ -939,3 +992,4 @@ output storageAccountName string = storageAccount.name
 output searchServiceEndpoint string = 'https://${searchService.name}.search.windows.net'
 output searchServiceName string = searchService.name
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
+output raiPolicyName string = contentPolicy.name

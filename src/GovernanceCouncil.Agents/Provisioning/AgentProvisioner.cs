@@ -23,6 +23,7 @@ internal sealed class AgentProvisioner
     private string? _searchEndpoint;
     private string? _webIqConnectionName;
     private string? _webIqMcpUrl;
+    private string? _raiPolicyName;
 
     public AgentProvisioner(
         HttpClient? httpClient,
@@ -50,6 +51,7 @@ internal sealed class AgentProvisioner
         _searchEndpoint = Environment.GetEnvironmentVariable("SEARCH_SERVICE_ENDPOINT")?.Trim()?.TrimEnd('/');
         _webIqConnectionName = Environment.GetEnvironmentVariable("WEBIQ_CONNECTION_NAME")?.Trim();
         _webIqMcpUrl = Environment.GetEnvironmentVariable("WEBIQ_MCP_URL")?.Trim()?.TrimEnd('/');
+        _raiPolicyName = Environment.GetEnvironmentVariable("COUNCIL_RAI_POLICY_NAME")?.Trim();
 
         _logger.LogInformation("Grounding provider: {Provider}", Grounding.Active);
         if (Grounding.Active == Grounding.Provider.WebIq && (string.IsNullOrEmpty(_webIqConnectionName) || string.IsNullOrEmpty(_webIqMcpUrl)))
@@ -194,9 +196,22 @@ internal sealed class AgentProvisioner
         };
         // Per-tier reasoning effort (minimal for routing, low for personas, medium for synthesis).
         // Prompt agents run on the Responses API, so reasoning is the object { effort }, not the flat
-        // Chat-Completions `reasoning_effort`.
-        if (CouncilModels.ReasoningEffortFor(member.Tier) is { } effort && CouncilModels.SupportsReasoningEffort(member.ModelDeployment))
+        // Chat-Completions `reasoning_effort`. Use the Responses-surface capability check: xAI Grok
+        // rejects the `reasoning` object here (it only honours reasoning_effort on Chat Completions /
+        // local MAF), so it is intentionally excluded — attaching it would 400 the agent version create.
+        if (CouncilModels.ReasoningEffortFor(member.Tier) is { } effort && CouncilModels.SupportsResponsesReasoningEffort(member.ModelDeployment))
             definition["reasoning"] = new { effort = CouncilModels.NormalizeEffort(member.ModelDeployment, effort) };
+
+        // Content safety (RAI): the custom policy in COUNCIL_RAI_POLICY_NAME is already ENFORCED on this
+        // agent via the model deployment — every chat deployment is bound to it in
+        // infra/model-deployment.bicep (raiPolicyName), and this agent runs on member.ModelDeployment.
+        // The 2025-11-15-preview PromptAgentDefinition exposes no documented agent-level RAI / content
+        // filter field (definition = { kind, model, instructions, tools, reasoning? }), so we do NOT add
+        // a speculative property here — an unknown field would be rejected and break provisioning.
+        // TODO: when the agents API documents an agent-level RAI field (e.g. rai_policy_name /
+        // content_filter), attach _raiPolicyName here. The env var is already wired for that day.
+        if (!string.IsNullOrEmpty(_raiPolicyName))
+            _logger.LogDebug("Agent {Name}: content policy '{Policy}' enforced via the model deployment binding.", agentName, _raiPolicyName);
 
         var body = JsonSerializer.Serialize(new { definition });
 
