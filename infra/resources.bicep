@@ -113,6 +113,9 @@ var monitoringContributorRoleId = '749f88d5-cbae-40b8-bcfc-e573ddc772fa'
 var cognitiveServicesOpenAIUserRoleId = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
 var storageBlobDataOwnerRoleId = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
 var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
+// Cognitive Services Contributor — includes raiPolicies read/write, needed by the runtime so a
+// presenter can toggle the content-filter strictness per deliberation (control-plane policy update).
+var cognitiveServicesContributorRoleId = '25fbc0a9-bd7c-42a3-aa1a-3b75d497ee68'
 
 // Cosmos DB built-in data contributor role (scope-level RBAC)
 var cosmosDbDataContributorRoleId = '00000000-0000-0000-0000-000000000002'
@@ -628,9 +631,24 @@ resource cogServicesUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01
   }
 }
 
-// Note: Cognitive Services Contributor (management plane) is NOT assigned here.
-// The deploying user's subscription Owner role covers all management plane operations.
-// Only data plane roles are explicitly assigned.
+// Cognitive Services Contributor (control plane) — grants raiPolicies read/write so the locally-run
+// app (identity = the deploying user) can update the account's custom RAI policy at runtime for the
+// per-deliberation content-filter toggle. The deploying user is usually subscription Owner already, but
+// this makes the capability explicit and survives a least-privileged user or a future hosted MI.
+// For production prefer a least-privilege CUSTOM role limited to
+// Microsoft.CognitiveServices/accounts/raiPolicies/read + .../raiPolicies/write instead of this built-in.
+resource userRaiPolicyContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(aiServices.id, userPrincipalId, cognitiveServicesContributorRoleId)
+  scope: aiServices
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      cognitiveServicesContributorRoleId
+    )
+    principalId: userPrincipalId
+    principalType: 'User'
+  }
+}
 
 // --- User → Foundry project ------------------------------------------------
 

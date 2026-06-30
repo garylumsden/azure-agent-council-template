@@ -145,6 +145,14 @@ if (isConfigured)
 
     builder.Services.AddSingleton<CouncilRuntimeProvider>();
 
+    // Runtime content-filter toggle: updates the account RAI policy's Violence threshold per
+    // deliberation (control plane). Uses the shared credential + a pooled HttpClient.
+    builder.Services.AddSingleton<GovernanceCouncil.Agents.Provisioning.RaiPolicyManager>(sp =>
+        new GovernanceCouncil.Agents.Provisioning.RaiPolicyManager(
+            credential,
+            sp.GetRequiredService<IHttpClientFactory>().CreateClient(),
+            sp.GetRequiredService<ILoggerFactory>().CreateLogger<GovernanceCouncil.Agents.Provisioning.RaiPolicyManager>()));
+
     builder.Services.AddSingleton<CouncilOrchestrator>(sp =>
         new CouncilOrchestrator(
             sp.GetRequiredService<IDeliberationNotifier>(),
@@ -154,6 +162,7 @@ if (isConfigured)
             sp.GetRequiredService<IAssessmentStore>(),
             sp.GetRequiredService<CouncilRuntimeProvider>(),
             sp.GetRequiredService<NexusAnalystService>(),
+            sp.GetRequiredService<GovernanceCouncil.Agents.Provisioning.RaiPolicyManager>(),
             sp.GetRequiredService<ILoggerFactory>().CreateLogger<CouncilOrchestrator>()));
     builder.Services.AddSingleton<DossierIngestionService>(sp =>
         new DossierIngestionService(

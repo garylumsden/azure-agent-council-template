@@ -102,7 +102,18 @@
 }
 
 <section class="gc-section">
-    <div class="gc-section-head"><h2>All dossiers</h2></div>
+    <div class="gc-section-head d-flex align-items-end justify-content-between flex-wrap gap-2">
+        <h2 class="mb-0">All dossiers</h2>
+        <div title="Single-presenter demo control. Updates the account's content-safety policy (Violence category) before the next deliberation — account-global and takes a few seconds to apply, so don't run concurrent deliberations.">
+            <label class="form-label mb-1 small">Content filter — Violence</label>
+            <select class="form-select form-select-sm" style="min-width:12rem;" @bind="_selectedViolence">
+                <option value="">Unchanged (current policy)</option>
+                <option value="Low">Low — block at Low+ (strictest)</option>
+                <option value="Medium">Medium — block at Medium+ (default)</option>
+                <option value="High">High — block at High only (most permissive)</option>
+            </select>
+        </div>
+    </div>
 @if (_dossiers is null)
 {
     <p class="text-muted">Loading…</p>
@@ -145,6 +156,8 @@ else
     private CouncilModels.ModelProfile _selectedProfile = CouncilModels.Profile;
     private Grounding.Provider _selectedProvider = Grounding.Active;
     private AgentRuntime.Mode _selectedRuntime = AgentRuntime.Active;
+    // Per-deliberation content-filter (Violence) toggle. "" = leave the policy unchanged (no API call).
+    private string _selectedViolence = "";
     private bool _applying;
     private string? _settingsMessage;
 
@@ -229,7 +242,8 @@ else
             // SignalR group, so the viewer never misses the opening phases (Independent Assessment).
             await Orchestrator.CreateDeliberationRecordAsync(dossierId, deliberationId);
 
-            Navigation.NavigateTo($"/deliberation/{deliberationId}/live?dossierId={dossierId}");
+            var violenceQuery = string.IsNullOrEmpty(_selectedViolence) ? "" : $"&violence={_selectedViolence}";
+            Navigation.NavigateTo($"/deliberation/{deliberationId}/live?dossierId={dossierId}{violenceQuery}");
         }
         catch (Exception ex)
         {

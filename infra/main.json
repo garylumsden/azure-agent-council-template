@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.1.21952",
-      "templateHash": "5943814548028933968"
+      "templateHash": "909367247227503389"
     }
   },
   "parameters": {
@@ -280,7 +280,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.1.21952",
-              "templateHash": "1912016365983769555"
+              "templateHash": "1924902390311406585"
             }
           },
           "parameters": {
@@ -480,6 +480,7 @@
             "cognitiveServicesOpenAIUserRoleId": "5e0bd9bd-7b93-4f28-af87-19fc36ad61bd",
             "storageBlobDataOwnerRoleId": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
             "keyVaultSecretsUserRoleId": "4633458b-17de-408a-b874-0445c86b69e6",
+            "cognitiveServicesContributorRoleId": "25fbc0a9-bd7c-42a3-aa1a-3b75d497ee68",
             "cosmosDbDataContributorRoleId": "00000000-0000-0000-0000-000000000002"
           },
           "resources": [
@@ -989,6 +990,20 @@
               "metadata": {
                 "description": "Cognitive Services User – user calls AI Services APIs"
               }
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.CognitiveServices/accounts', variables('aiServicesName'))]",
+              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts', variables('aiServicesName')), parameters('userPrincipalId'), variables('cognitiveServicesContributorRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('cognitiveServicesContributorRoleId'))]",
+                "principalId": "[parameters('userPrincipalId')]",
+                "principalType": "User"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', variables('aiServicesName'))]"
+              ]
             },
             {
               "type": "Microsoft.Authorization/roleAssignments",

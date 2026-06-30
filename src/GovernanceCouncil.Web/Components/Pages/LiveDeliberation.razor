@@ -150,6 +150,7 @@
 @code {
     [Parameter] public string DeliberationId { get; set; } = "";
     [SupplyParameterFromQuery] public string? DossierId { get; set; }
+    [SupplyParameterFromQuery] public string? Violence { get; set; }
 
     private Deliberation? _deliberation;
     private Dossier? _dossier;
@@ -609,7 +610,7 @@
         // Guard on IsInteractive so the prerender pass doesn't start it before the real circuit joins.
         if (RendererInfo.IsInteractive && _deliberation is { Status: DeliberationStatus.Pending })
         {
-            Orchestrator.StartDeliberationOnce(_deliberation.DossierId, DeliberationId);
+            Orchestrator.StartDeliberationOnce(_deliberation.DossierId, DeliberationId, Violence);
         }
 
         _pollTimer = new System.Threading.Timer(async _ =>

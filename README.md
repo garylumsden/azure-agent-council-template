@@ -178,6 +178,23 @@ the bound deployments; its name is surfaced to the app as `COUNCIL_RAI_POLICY_NA
 > Without approval the `raiPolicies` deployment is rejected, so leave the defaults unless your
 > subscription is approved.
 
+### Live per-deliberation toggle (single-presenter demo)
+
+The dossier page has a **Content filter — Violence** control (`Unchanged` / `Low` / `Medium` / `High`)
+that sets the Violence threshold applied to the **next** deliberation, so you can demo a block (strict)
+then a pass (relaxed) on the same dossier without re-provisioning. Leaving it `Unchanged` makes no API
+call. Because Azure content filters live on the model **deployment**, the app applies the choice by
+updating the account's RAI policy at runtime (control plane), then waits a few seconds for it to
+propagate before the council debates.
+
+> ⚠️ This is a **single-presenter demo feature**. The update is **account-global** (it changes the
+> policy for every bound deployment) and takes a few seconds to take effect — **do not run concurrent
+> deliberations** while using it. It needs the runtime identity to have `raiPolicies/write` on the AI
+> Services account (granted in `infra/` via Cognitive Services Contributor on the deploying user) and
+> the `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`, `AI_SERVICES_RESOURCE_NAME`,
+> `COUNCIL_RAI_POLICY_NAME` env vars (all set by `azd`); it no-ops cleanly if any are missing. Setting
+> `Low`/`Medium`/`High` needs no approval — only turning a filter fully off needs Limited Access.
+
 ## Conventions
 
 - **.NET 10**, C# 13 idioms (records, primary constructors, file-scoped namespaces).

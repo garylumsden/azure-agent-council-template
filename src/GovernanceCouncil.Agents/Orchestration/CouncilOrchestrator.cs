@@ -24,6 +24,7 @@ public sealed class CouncilOrchestrator
     private readonly IAssessmentStore _assessmentStore;
     private readonly NexusAnalystService? _nexusAnalyst;
     private readonly GovernanceCouncil.Agents.Runtime.CouncilRuntimeProvider _runtimes;
+    private readonly GovernanceCouncil.Agents.Provisioning.RaiPolicyManager? _raiPolicy;
     private readonly ILogger<CouncilOrchestrator> _logger;
 
     public CouncilOrchestrator(
@@ -34,6 +35,7 @@ public sealed class CouncilOrchestrator
         IAssessmentStore assessmentStore,
         GovernanceCouncil.Agents.Runtime.CouncilRuntimeProvider runtimes,
         NexusAnalystService? nexusAnalyst = null,
+        GovernanceCouncil.Agents.Provisioning.RaiPolicyManager? raiPolicy = null,
         ILogger<CouncilOrchestrator>? logger = null)
     {
         _notifier = notifier;
@@ -43,6 +45,7 @@ public sealed class CouncilOrchestrator
         _assessmentStore = assessmentStore;
         _nexusAnalyst = nexusAnalyst;
         _runtimes = runtimes;
+        _raiPolicy = raiPolicy;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<CouncilOrchestrator>.Instance;
     }
 
@@ -112,12 +115,12 @@ public sealed class CouncilOrchestrator
     /// viewer has joined the SignalR group, so the opening phases (Independent Assessment, roll-call)
     /// are not emitted before anyone is listening — the debate no longer races ahead of the client.
     /// </summary>
-    public void StartDeliberationOnce(string dossierId, string deliberationId)
+    public void StartDeliberationOnce(string dossierId, string deliberationId, string? violenceThreshold = null)
     {
         if (!_startedDeliberations.TryAdd(deliberationId, 1)) return;
         _ = Task.Run(async () =>
         {
-            try { await RunDeliberationAsync(dossierId, existingDeliberationId: deliberationId); }
+            try { await RunDeliberationAsync(dossierId, existingDeliberationId: deliberationId, violenceThreshold: violenceThreshold); }
             catch { /* failures are recorded on the deliberation record by the orchestrator */ }
         });
     }
@@ -130,6 +133,7 @@ public sealed class CouncilOrchestrator
         string dossierId,
         string? context = null,
         string? existingDeliberationId = null,
+        string? violenceThreshold = null,
         CancellationToken ct = default)
     {
         var dossier = await _dossierStore.GetAsync(dossierId, ct);
@@ -166,6 +170,12 @@ public sealed class CouncilOrchestrator
 
         try
         {
+            // Per-deliberation content-filter toggle: update the account RAI policy's Violence threshold
+            // before the debate so the deployments pick it up. Account-global + a few seconds to
+            // propagate (single-presenter demo only). No-ops when no threshold is chosen.
+            if (_raiPolicy is not null && !string.IsNullOrWhiteSpace(violenceThreshold))
+                await _raiPolicy.EnsureViolenceThresholdAsync(violenceThreshold, ct);
+
             var dossierPrompt = DossierPromptBuilder.Build(dossier, markdown, context);
 
             // Live council debate (hands-up / push-to-talk) via the MAF debate engine. Agents are the
