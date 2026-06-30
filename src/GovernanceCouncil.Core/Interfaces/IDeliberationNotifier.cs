@@ -56,6 +56,13 @@ public interface IDeliberationNotifier
     Task ContentSafetyTriggeredAsync(string deliberationId, string agentName, string scope);
 
     /// <summary>
+    /// The content-safety policy is being changed for this deliberation (control-plane update + a few
+    /// seconds to propagate). <paramref name="applying"/> true while it runs, false when done — lets the
+    /// UI show that the new strictness is being applied before the council convenes.
+    /// </summary>
+    Task ContentSafetyApplyingAsync(string deliberationId, bool applying);
+
+    /// <summary>
     /// The post-deliberation Nexus Analyst stage. <paramref name="connectionCount"/> is null while it
     /// runs and the discovered count once finished (0 ⇒ no connections). Lets the Nexus Analyst appear
     /// in the live thread the same way the Chair's synthesis turn does.

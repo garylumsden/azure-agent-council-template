@@ -8,6 +8,7 @@
 @inject IDossierBlobService BlobService
 @inject DossierIngestionService IngestionService
 @inject CouncilOrchestrator Orchestrator
+@inject GovernanceCouncil.Agents.Provisioning.RaiPolicyManager RaiPolicy
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
@@ -105,13 +106,23 @@
     <div class="gc-section-head d-flex align-items-end justify-content-between flex-wrap gap-2">
         <h2 class="mb-0">All dossiers</h2>
         <div title="Single-presenter demo control. Adjusts the content-safety policy strictness before the next deliberation — account-global and takes a few seconds to apply, so don't run concurrent deliberations.">
-            <label class="form-label mb-1 small">Content safety</label>
+            <label class="form-label mb-1 small">
+                Content safety
+                @if (_currentSafetyKnown)
+                {
+                    <span class="text-muted">— current: <strong>@SafetyLabel(_currentSafety)</strong></span>
+                }
+            </label>
             <select class="form-select form-select-sm" style="min-width:12rem;" @bind="_selectedViolence">
-                <option value="">Unchanged (current policy)</option>
+                @if (!_currentSafetyKnown)
+                {
+                    <option value="">Unchanged (current policy)</option>
+                }
                 <option value="Low">Strict</option>
                 <option value="Medium">Standard</option>
                 <option value="High">Relaxed</option>
             </select>
+            <div class="form-text small">Changing this is applied at the start of the next deliberation (a few seconds).</div>
         </div>
     </div>
 @if (_dossiers is null)
@@ -156,10 +167,23 @@ else
     private CouncilModels.ModelProfile _selectedProfile = CouncilModels.Profile;
     private Grounding.Provider _selectedProvider = Grounding.Active;
     private AgentRuntime.Mode _selectedRuntime = AgentRuntime.Active;
-    // Per-deliberation content-filter (Violence) toggle. "" = leave the policy unchanged (no API call).
+    // Per-deliberation content-safety strictness toggle. Values map Low=Strict / Medium=Standard /
+    // High=Relaxed. "" = leave the policy unchanged (no control-plane call).
     private string _selectedViolence = "";
+    // The live policy level read from the control plane on load, so the presenter sees the current state.
+    private string? _currentSafety;
+    private bool _currentSafetyKnown;
     private bool _applying;
     private string? _settingsMessage;
+
+    // Generic, category-free demo labels for the content-safety strictness levels.
+    private static string SafetyLabel(string? level) => (level ?? "").Trim().ToLowerInvariant() switch
+    {
+        "low" => "Strict",
+        "medium" => "Standard",
+        "high" => "Relaxed",
+        _ => "Unknown"
+    };
 
     private bool SettingsChanged =>
         _selectedProfile != CouncilModels.Profile
@@ -194,6 +218,19 @@ else
     protected override async Task OnInitializedAsync()
     {
         _dossiers = await DossierStore.ListAsync();
+
+        // Read the live content-safety level from the control plane so the presenter sees the current
+        // setting and the dropdown reflects it. Best-effort: unavailable (local run / no RBAC) ⇒ Unknown.
+        try
+        {
+            _currentSafety = await RaiPolicy.GetCurrentThresholdAsync();
+            if (!string.IsNullOrWhiteSpace(_currentSafety))
+            {
+                _currentSafetyKnown = true;
+                _selectedViolence = _currentSafety;
+            }
+        }
+        catch { /* leave as Unknown / Unchanged */ }
     }
 
     private void OnMdFileSelected(InputFileChangeEventArgs e)
@@ -242,7 +279,11 @@ else
             // SignalR group, so the viewer never misses the opening phases (Independent Assessment).
             await Orchestrator.CreateDeliberationRecordAsync(dossierId, deliberationId);
 
-            var safetyQuery = string.IsNullOrEmpty(_selectedViolence) ? "" : $"&cs={_selectedViolence}";
+            // Only pass the content-safety level when the presenter actually changed it from the live
+            // value — otherwise there's nothing to apply (no control-plane call, no "applying" delay).
+            var changed = !string.IsNullOrEmpty(_selectedViolence)
+                && !string.Equals(_selectedViolence, _currentSafety, StringComparison.OrdinalIgnoreCase);
+            var safetyQuery = changed ? $"&cs={_selectedViolence}" : "";
             Navigation.NavigateTo($"/deliberation/{deliberationId}/live?dossierId={dossierId}{safetyQuery}");
         }
         catch (Exception ex)

@@ -174,7 +174,11 @@ public sealed class CouncilOrchestrator
             // before the debate so the deployments pick it up. Account-global + a few seconds to
             // propagate (single-presenter demo only). No-ops when no threshold is chosen.
             if (_raiPolicy is not null && !string.IsNullOrWhiteSpace(violenceThreshold))
+            {
+                await _notifier.ContentSafetyApplyingAsync(deliberationId, true);
                 await _raiPolicy.EnsureViolenceThresholdAsync(violenceThreshold, ct);
+                await _notifier.ContentSafetyApplyingAsync(deliberationId, false);
+            }
 
             var dossierPrompt = DossierPromptBuilder.Build(dossier, markdown, context);
 

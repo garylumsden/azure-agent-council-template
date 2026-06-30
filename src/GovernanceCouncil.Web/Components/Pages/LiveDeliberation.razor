@@ -90,6 +90,14 @@
         }
     }
 
+    @if (_contentSafetyApplying)
+    {
+        <div class="alert alert-info d-flex align-items-center gap-2" role="status" aria-live="polite">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span>Applying the content-safety setting… this takes a few seconds to take effect before the council convenes.</span>
+        </div>
+    }
+
     @if (_contentSafetyBlocked.Count > 0)
     {
         <div class="alert alert-warning d-flex align-items-start gap-2" role="status" aria-live="polite">
@@ -189,6 +197,8 @@
     private int _assessmentCount;
     // Members whose contribution was blocked by the content-safety policy (display name → kept once).
     private readonly Dictionary<string, byte> _contentSafetyBlocked = new(StringComparer.OrdinalIgnoreCase);
+    // True while the content-safety policy is being updated for this run (control-plane + propagation).
+    private bool _contentSafetyApplying;
     private readonly Dictionary<string, AgentStreamState> _agentStates = new(StringComparer.OrdinalIgnoreCase);
 
     // Accumulating chat-style transcript of speaker turns (debate/synthesis phases).
@@ -642,6 +652,13 @@
                 turn.Blocked = true;
                 turn.Speaking = false;
             }
+            InvokeAsync(StateHasChanged);
+        });
+
+        // The content-safety strictness is being applied for this run (a few seconds to propagate).
+        _hubConnection.On<bool>("ContentSafetyApplying", applying =>
+        {
+            _contentSafetyApplying = applying;
             InvokeAsync(StateHasChanged);
         });
 

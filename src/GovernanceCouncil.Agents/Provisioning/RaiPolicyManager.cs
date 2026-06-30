@@ -50,21 +50,16 @@ public sealed class RaiPolicyManager
         var target = Normalise(targetThreshold);
         if (target is null)
         {
-            _logger.LogWarning("RAI toggle ignored: '{Value}' is not Low/Medium/High.", targetThreshold);
+            _logger.LogWarning("Content-safety toggle ignored: '{Value}' is not a recognised level.", targetThreshold);
             return;
         }
 
-        var sub = Env("AZURE_SUBSCRIPTION_ID");
-        var rg = Env("AZURE_RESOURCE_GROUP");
-        var account = Env("AI_SERVICES_RESOURCE_NAME");
-        var policy = Env("COUNCIL_RAI_POLICY_NAME");
-        if (sub is null || rg is null || account is null || policy is null)
+        var url = BuildPolicyUrl();
+        if (url is null)
         {
-            _logger.LogInformation("RAI toggle skipped: set AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, AI_SERVICES_RESOURCE_NAME and COUNCIL_RAI_POLICY_NAME to enable it.");
+            _logger.LogInformation("Content-safety toggle skipped: set AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, AI_SERVICES_RESOURCE_NAME and COUNCIL_RAI_POLICY_NAME to enable it.");
             return;
         }
-
-        var url = $"https://management.azure.com/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.CognitiveServices/accounts/{account}/raiPolicies/{policy}?api-version={ApiVersion}";
 
         try
         {
@@ -99,8 +94,42 @@ public sealed class RaiPolicyManager
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "RAI toggle failed; proceeding on the live policy.");
+            _logger.LogWarning(ex, "Content-safety toggle failed; proceeding on the live policy.");
         }
+    }
+
+    /// <summary>
+    /// Reads the current content-safety severity threshold (<c>Low</c> | <c>Medium</c> | <c>High</c>)
+    /// from the account RAI policy via the control plane, so the UI can show the live setting. Returns
+    /// null when the env config is missing or the read fails (the caller treats that as "unknown").
+    /// </summary>
+    public async Task<string?> GetCurrentThresholdAsync(CancellationToken ct = default)
+    {
+        var url = BuildPolicyUrl();
+        if (url is null) return null;
+        try
+        {
+            var token = (await _credential.GetTokenAsync(new TokenRequestContext([ManagementScope]), ct)).Token;
+            var policy = await GetPolicyAsync(url, token, ct);
+            return policy is null ? null : CurrentViolence(policy);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not read the current content-safety level.");
+            return null;
+        }
+    }
+
+    /// <summary>Builds the ARM URL for the account RAI policy, or null if any required env var is unset.</summary>
+    private static string? BuildPolicyUrl()
+    {
+        var sub = Env("AZURE_SUBSCRIPTION_ID");
+        var rg = Env("AZURE_RESOURCE_GROUP");
+        var account = Env("AI_SERVICES_RESOURCE_NAME");
+        var policy = Env("COUNCIL_RAI_POLICY_NAME");
+        if (sub is null || rg is null || account is null || policy is null) return null;
+        return $"https://management.azure.com/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.CognitiveServices/accounts/{account}/raiPolicies/{policy}?api-version={ApiVersion}";
     }
 
     private async Task<JsonObject?> GetPolicyAsync(string url, string token, CancellationToken ct)
@@ -110,7 +139,7 @@ public sealed class RaiPolicyManager
         using var res = await _http.SendAsync(req, ct);
         if (!res.IsSuccessStatusCode)
         {
-            _logger.LogWarning("RAI toggle: GET policy failed ({Status}).", res.StatusCode);
+            _logger.LogWarning("Content-safety: GET policy failed ({Status}).", res.StatusCode);
             return null;
         }
         var body = await res.Content.ReadAsStringAsync(ct);

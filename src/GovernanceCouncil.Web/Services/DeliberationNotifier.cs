@@ -128,4 +128,10 @@ public sealed class DeliberationNotifier : IDeliberationNotifier
     {
         await _hub.Clients.Group(deliberationId).SendAsync("ContentSafetyTriggered", agentName, scope);
     }
+
+    /// <summary>The content-safety policy is being updated for this deliberation (true=applying, false=done).</summary>
+    public async Task ContentSafetyApplyingAsync(string deliberationId, bool applying)
+    {
+        await _hub.Clients.Group(deliberationId).SendAsync("ContentSafetyApplying", applying);
+    }
 }
