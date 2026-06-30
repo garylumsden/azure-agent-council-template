@@ -372,7 +372,15 @@ internal sealed class CouncilDebate
         }
         catch (Exception ex) when (!ct.IsCancellationRequested)
         {
-            _logger.LogError(ex, "Speaker {Agent} failed", agentName);
+            if (ContentSafety.IsContentFilterBlock(ex))
+            {
+                _logger.LogWarning("Speaker {Agent} blocked by the content-safety policy ({Scope})", agentName, ContentSafety.Scope(ex));
+                await _notifier.ContentSafetyTriggeredAsync(deliberationId, agentName, ContentSafety.Scope(ex));
+            }
+            else
+            {
+                _logger.LogError(ex, "Speaker {Agent} failed", agentName);
+            }
             await _notifier.AgentCompleteAsync(deliberationId, agentName);
             return "";
         }

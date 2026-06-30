@@ -48,6 +48,14 @@ public interface IDeliberationNotifier
     Task DebateConcludedAsync(string deliberationId, string reason);
 
     /// <summary>
+    /// A member's contribution was blocked by the Azure content-safety (Responsible AI) policy — the
+    /// model's input or output was rated at/above the policy's blocking threshold. Surfaced to the user
+    /// so a content-safety trigger is visible rather than silently swallowed. <paramref name="scope"/>
+    /// is a short label: <c>input</c> | <c>output</c> | <c>content</c>.
+    /// </summary>
+    Task ContentSafetyTriggeredAsync(string deliberationId, string agentName, string scope);
+
+    /// <summary>
     /// The post-deliberation Nexus Analyst stage. <paramref name="connectionCount"/> is null while it
     /// runs and the discovered count once finished (0 ⇒ no connections). Lets the Nexus Analyst appear
     /// in the live thread the same way the Chair's synthesis turn does.

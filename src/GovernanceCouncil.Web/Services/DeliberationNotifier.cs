@@ -122,4 +122,10 @@ public sealed class DeliberationNotifier : IDeliberationNotifier
     {
         await _hub.Clients.Group(deliberationId).SendAsync("NexusAnalysis", agentName, connectionCount);
     }
+
+    /// <summary>A member's contribution was blocked by the content-safety (RAI) policy.</summary>
+    public async Task ContentSafetyTriggeredAsync(string deliberationId, string agentName, string scope)
+    {
+        await _hub.Clients.Group(deliberationId).SendAsync("ContentSafetyTriggered", agentName, scope);
+    }
 }

@@ -499,6 +499,11 @@
     background: rgba(217, 164, 41, 0.1);
 }
 
+.rc-card.blocked {
+    border-left-color: #c0392b;
+    background: rgba(192, 57, 43, 0.12);
+}
+
 .rc-warn {
     color: #f0b441;
     font-weight: 700;

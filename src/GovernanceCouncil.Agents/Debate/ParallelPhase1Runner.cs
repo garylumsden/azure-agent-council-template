@@ -164,7 +164,15 @@ internal sealed class ParallelPhase1Runner
         }
         catch (Exception ex) when (!ct.IsCancellationRequested)
         {
-            _logger.LogError(ex, "Independent Assessment: agent {AgentName} failed", agentName);
+            if (ContentSafety.IsContentFilterBlock(ex))
+            {
+                _logger.LogWarning("Independent Assessment: {AgentName} blocked by the content-safety policy ({Scope})", agentName, ContentSafety.Scope(ex));
+                await _notifier.ContentSafetyTriggeredAsync(deliberationId, agentName, ContentSafety.Scope(ex));
+            }
+            else
+            {
+                _logger.LogError(ex, "Independent Assessment: agent {AgentName} failed", agentName);
+            }
             await _notifier.AgentCompleteAsync(deliberationId, agentName);
             return new MemberAssessment(agentName, "", "", null);
         }

@@ -90,6 +90,21 @@
         }
     }
 
+    @if (_contentSafetyBlocked.Count > 0)
+    {
+        <div class="alert alert-warning d-flex align-items-start gap-2" role="status" aria-live="polite">
+            <span aria-hidden="true">🛡️</span>
+            <div>
+                <strong>Content safety triggered.</strong>
+                @($"{_contentSafetyBlocked.Count} contribution(s) were blocked by the Responsible AI policy") —
+                <span>@string.Join(", ", _contentSafetyBlocked.Keys)</span>.
+                Those members were skipped; the debate continued with the rest. To allow this content,
+                relax the relevant category (e.g. the Violence content-filter toggle on the dossier page)
+                and re-run.
+            </div>
+        </div>
+    }
+
     <DebateChamber Seats="BuildSeats()"
                    Phase="@_phase"
                    Round="_round"
@@ -173,6 +188,8 @@
     private bool _moderatorCalling;
     private bool _assessmentConfirmed;
     private int _assessmentCount;
+    // Members whose contribution was blocked by the content-safety policy (display name → kept once).
+    private readonly Dictionary<string, byte> _contentSafetyBlocked = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AgentStreamState> _agentStates = new(StringComparer.OrdinalIgnoreCase);
 
     // Accumulating chat-style transcript of speaker turns (debate/synthesis phases).
@@ -204,6 +221,7 @@
         public bool MicLive { get; set; }
         public int SpeakCount { get; set; }
         public bool Assessing { get; set; }
+        public bool Blocked { get; set; }
         public string? PositionSummary { get; set; }
         public string Text { get; set; } = "";
         // Phase-1 initial-assessment text only — kept separate so later debate/bid
@@ -300,6 +318,7 @@
                 MicLive = st?.MicLive ?? false,
                 Speaking = st?.IsSpeaking ?? false,
                 Assessing = st?.Assessing ?? false,
+                Blocked = st?.Blocked ?? false,
                 PositionSummary = st?.PositionSummary,
                 Detail = st?.AssessmentText,
             });
@@ -599,6 +618,17 @@
             }
             _nexusTurn.Speaking = count is null;
             _nexusTurn.NexusCount = count;
+            InvokeAsync(StateHasChanged);
+        });
+
+        // A member's contribution was blocked by the content-safety (RAI) policy — surface it so the
+        // trigger is visible to the user instead of being silently swallowed.
+        _hubConnection.On<string, string>("ContentSafetyTriggered", (agentName, scope) =>
+        {
+            var s = GetOrAdd(agentName);
+            s.Blocked = true;
+            s.Assessing = false;
+            _contentSafetyBlocked[SpeakerName(agentName)] = 1;
             InvokeAsync(StateHasChanged);
         });
 

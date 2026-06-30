@@ -22,7 +22,20 @@ internal static class AssessmentParser
 
         var assessmentId = $"AS-{DateTime.UtcNow:yyyy}-{Guid.NewGuid().ToString("N")[..8]}";
 
-        using var doc = JsonDocument.Parse(json);
+        // The Chair's JSON can be truncated (token limit) or cut short by a content filter on the
+        // completion, leaving an unclosed object. Don't hard-fail the deliberation: fall back to a clear
+        // "could not be parsed" Defer assessment so the user still gets a result with an explanation.
+        JsonDocument doc;
+        try
+        {
+            doc = JsonDocument.Parse(json);
+        }
+        catch (JsonException)
+        {
+            return UnparseableFallback(dossierId, dossierTitle, deliberationId);
+        }
+        using (doc)
+        {
         var root = doc.RootElement;
 
         var votes = new Dictionary<string, MemberVote>();
@@ -123,8 +136,42 @@ internal static class AssessmentParser
             Risks = risks,
             Status = "Completed"
         };
+        }
     }
 
+    /// <summary>
+    /// Builds a graceful "Defer" Assessment for when the Chair's synthesis JSON could not be parsed —
+    /// usually because it was truncated (token limit) or cut short by a content filter on the
+    /// completion. The deliberation completes with a clear explanation instead of hard-failing.
+    /// </summary>
+    public static Assessment UnparseableFallback(string dossierId, string dossierTitle, string deliberationId)
+    {
+        var assessmentId = $"AS-{DateTime.UtcNow:yyyy}-{Guid.NewGuid().ToString("N")[..8]}";
+        return new Assessment
+        {
+            Id = assessmentId,
+            AssessmentId = assessmentId,
+            DossierId = dossierId,
+            DossierTitle = dossierTitle,
+            DeliberationId = deliberationId,
+            ReviewDate = DateTimeOffset.UtcNow,
+            OverallRecommendation = "Defer",
+            ChairSummary =
+                "The Council reached a verdict but the Chair's final assessment could not be read back: " +
+                "the structured output was incomplete (it was likely truncated, or cut short by the " +
+                "content-safety policy filtering the response). Re-run the deliberation; if it recurs on " +
+                "the same dossier, the content may be triggering the Responsible AI filter — relax the " +
+                "relevant category (e.g. `azd env set COUNCIL_CONTENT_VIOLENCE_THRESHOLD High`) or use " +
+                "the Violence content-filter toggle on the dossier page, then try again.",
+            Participants = null,
+            DeliberationSummary = null,
+            Votes = new Dictionary<string, MemberVote>(),
+            Conditions = new List<string>(),
+            Dissent = new List<Dissent>(),
+            Risks = new List<Risk>(),
+            Status = "Completed"
+        };
+    }
     /// <summary>
     /// Builds a graceful "Defer" Assessment for when the Chair's synthesis was blocked by the
     /// content-safety (RAI) policy, so the deliberation completes with clear, honest feedback (shown

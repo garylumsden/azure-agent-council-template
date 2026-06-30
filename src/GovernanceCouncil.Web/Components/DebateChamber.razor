@@ -84,14 +84,19 @@
             @foreach (var seat in Seats.Where(s => !s.IsChair))
             {
                 var done = !string.IsNullOrWhiteSpace(seat.PositionSummary);
-                var failed = !done && AssessmentConfirmed;
-                <div class="rc-card @(done ? "done" : failed ? "failed" : seat.Assessing ? "assessing" : "")">
+                var blocked = !done && seat.Blocked;
+                var failed = !done && !blocked && AssessmentConfirmed;
+                <div class="rc-card @(done ? "done" : blocked ? "blocked" : failed ? "failed" : seat.Assessing ? "assessing" : "")">
                     <div class="rc-head">
                         <span class="avatar" style="width:26px;height:26px;font-size:0.72rem;background:@seat.Colour;border-width:1px;" aria-hidden="true">@seat.Initials</span>
                         <span class="rc-name">@seat.DisplayName</span>
                         @if (done)
                         {
                             <span class="rc-tick" aria-label="position tabled">✓</span>
+                        }
+                        else if (blocked)
+                        {
+                            <span class="rc-warn" aria-label="blocked by content safety" title="Blocked by the content-safety policy">🛡️</span>
                         }
                         else if (failed)
                         {
@@ -106,6 +111,10 @@
                         @if (done)
                         {
                             @ModelText.StripSourceAnnotations(seat.PositionSummary)
+                        }
+                        else if (blocked)
+                        {
+                            <em class="rc-preview">Blocked by the content-safety policy</em>
                         }
                         else if (failed)
                         {
@@ -297,6 +306,7 @@
         public bool MicLive { get; set; }
         public bool Speaking { get; set; }
         public bool Assessing { get; set; }
+        public bool Blocked { get; set; }
         public string? PositionSummary { get; set; }
         public string? Detail { get; set; }
     }

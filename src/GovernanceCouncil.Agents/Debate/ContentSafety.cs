@@ -37,4 +37,21 @@ internal static class ContentSafety
         }
         return false;
     }
+
+    /// <summary>
+    /// A short human label for what the filter flagged: the model's <c>input</c> (prompt) or its
+    /// <c>output</c> (response), falling back to <c>content</c>. Used in user-facing messages.
+    /// </summary>
+    public static string Scope(Exception? ex)
+    {
+        for (var e = ex; e is not null; e = e.InnerException)
+        {
+            var msg = e.Message;
+            if (string.IsNullOrEmpty(msg)) continue;
+            if (msg.Contains("prompt", StringComparison.OrdinalIgnoreCase)) return "input";
+            if (msg.Contains("response was filtered", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("completion", StringComparison.OrdinalIgnoreCase)) return "output";
+        }
+        return "content";
+    }
 }
