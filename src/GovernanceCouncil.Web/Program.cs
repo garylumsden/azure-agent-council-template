@@ -163,6 +163,7 @@ if (isConfigured)
             sp.GetRequiredService<CouncilRuntimeProvider>(),
             sp.GetRequiredService<NexusAnalystService>(),
             sp.GetRequiredService<GovernanceCouncil.Agents.Provisioning.RaiPolicyManager>(),
+            sp.GetRequiredService<KnowledgeBaseManager>(),
             sp.GetRequiredService<ILoggerFactory>().CreateLogger<CouncilOrchestrator>()));
     builder.Services.AddSingleton<DossierIngestionService>(sp =>
         new DossierIngestionService(

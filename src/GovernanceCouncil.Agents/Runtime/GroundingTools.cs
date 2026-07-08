@@ -125,7 +125,7 @@ internal static class GroundingTools
                 req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Token);
                 req.Content = JsonContent.Create(new
                 {
-                    messages = new[] { new { role = "user", content = query } }
+                    messages = new[] { new { role = "user", content = new[] { new { type = "text", text = query } } } }
                 });
                 using var resp = await cfg.Http.SendAsync(req, ct);
                 var body = await resp.Content.ReadAsStringAsync(ct);

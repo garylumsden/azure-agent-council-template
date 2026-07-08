@@ -5,6 +5,7 @@ using Azure.AI.Projects;
 using GovernanceCouncil.Core.Interfaces;
 using GovernanceCouncil.Core.Models;
 using GovernanceCouncil.Agents.Debate;
+using GovernanceCouncil.Agents.Knowledge;
 using GovernanceCouncil.Agents.Nexus;
 using GovernanceCouncil.Agents.Provisioning;
 using Microsoft.Extensions.Logging;
@@ -25,6 +26,7 @@ public sealed class CouncilOrchestrator
     private readonly NexusAnalystService? _nexusAnalyst;
     private readonly GovernanceCouncil.Agents.Runtime.CouncilRuntimeProvider _runtimes;
     private readonly GovernanceCouncil.Agents.Provisioning.RaiPolicyManager? _raiPolicy;
+    private readonly KnowledgeBaseManager? _knowledgeBase;
     private readonly ILogger<CouncilOrchestrator> _logger;
 
     public CouncilOrchestrator(
@@ -36,6 +38,7 @@ public sealed class CouncilOrchestrator
         GovernanceCouncil.Agents.Runtime.CouncilRuntimeProvider runtimes,
         NexusAnalystService? nexusAnalyst = null,
         GovernanceCouncil.Agents.Provisioning.RaiPolicyManager? raiPolicy = null,
+        KnowledgeBaseManager? knowledgeBase = null,
         ILogger<CouncilOrchestrator>? logger = null)
     {
         _notifier = notifier;
@@ -46,6 +49,7 @@ public sealed class CouncilOrchestrator
         _nexusAnalyst = nexusAnalyst;
         _runtimes = runtimes;
         _raiPolicy = raiPolicy;
+        _knowledgeBase = knowledgeBase;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<CouncilOrchestrator>.Instance;
     }
 
@@ -75,6 +79,22 @@ public sealed class CouncilOrchestrator
             CouncilModels.SetProfile(profile);
             Grounding.SetProvider(provider);
             AgentRuntime.SetMode(runtime);
+
+            // Foundry IQ is self-provisioning: switching to it at runtime must ensure the KB exists
+            // (startup only provisions it when Foundry IQ is the boot provider). A KB hiccup must not
+            // block the runtime reload — same isolation as the startup path.
+            if (provider == Grounding.Provider.FoundryIq && _knowledgeBase is { IsConfigured: true })
+            {
+                try
+                {
+                    await _knowledgeBase.EnsureKnowledgeBaseAsync(ct);
+                }
+                catch (Exception kbEx)
+                {
+                    _logger.LogError(kbEx, "Failed to ensure Foundry IQ knowledge base while applying settings");
+                }
+            }
+
             await _runtimes.Active.ReloadAsync(ct);
             _logger.LogInformation("Council settings applied");
         }
