@@ -228,7 +228,7 @@ Reviewed: orchestration, agents, data, hub, configuration. Date format: ISO 8601
 | S3 | 🟡 Medium | `src/GovernanceCouncil.Agents/Provisioning/RaiPolicyManager.cs` | A local UI action mutates the account-global Azure AI RAI policy through ARM. This is still a consequential shared-resource action. Add a clear confirmation and scope warning. Do not treat it as a local preference. |
 | S4 | 🟡 Medium | 4 Razor components | `(MarkupString)Markdown.ToHtml(...)` rendered model and dossier text without sanitization. **Fixed in this change** — see the Fixes section. |
 | S5 | 🟡 Medium | `src/GovernanceCouncil.Web/DotEnvLoader.cs` | Overwrites existing environment variables unconditionally. A `.env` file beats real host configuration. It also ignores inline `#` comments, the `export ` prefix, and escaped quotes. |
-| S6 | ⚪ Low | repository settings | Secret scanning and push protection are disabled on a public repository. Both are free. Enable them. |
+| S6 | ⚪ Low | repository settings | Secret scanning and push protection are disabled. Enabling them is blocked by an enterprise policy (HTTP 422). An enterprise owner must allow it. |
 
 Positives kept: `DefaultAzureCredential` everywhere, no keys or connection strings in code, content-safety failures degrade into a "Defer" assessment, semaphore-gated model concurrency, retry on 429 and 5xx, deterministic SHA-256 nexus IDs that make upserts idempotent.
 
@@ -255,7 +255,7 @@ Every finding above is now fixed. The build stays at 0 errors and 0 warnings.
 | S3 | A content-safety change now requires an explicit confirmation that names the current level, the new level, and the account-global scope. The helper text states the scope. The query value is URL-encoded. | `Web/Components/Pages/DossierLibrary.razor` |
 | S4 | Added `.DisableHtml()` to every `MarkdownPipelineBuilder`, so raw HTML in model output or dossier text is escaped, not executed. | `Web/Components/DebateChamber.razor`, `Pages/AssessmentDetail.razor`, `Pages/DossierDetail.razor`, `Pages/LiveDeliberation.razor` |
 | S5 | A variable already present in the process environment is never overwritten by the file. Added support for the `export ` prefix, single and double quotes, escaped characters, and unquoted inline `#` comments. | `Web/DotEnvLoader.cs` |
-| S6 | Reported only. Enabling secret scanning needs a repository-settings change. | — |
+| S6 | Attempted. The API returns HTTP 422: modifying secret scanning is blocked by an enterprise policy. An enterprise owner must allow it. | — |
 | C1 | The deliberation identifier is removed in a `finally` block when the run ends, so the map stays bounded and a failed run can be retried. The failure is now logged instead of being swallowed. | `Agents/Orchestration/CouncilOrchestrator.cs` |
 | C2 | Added a `SemaphoreSlim` with double-checked `volatile bool`. The roster is built into locals and published as a unit, then the flag is set last. `RefreshAsync` clears only the flag and keeps the published roster readable. `FetchAsync` now calls `GetAgentAsync` instead of blocking a thread-pool thread with `Task.Run`. | `Agents/Provisioning/AgentCache.cs` |
 | C3 | `IsReprovisioning` is now an `Interlocked` depth counter read with `Volatile.Read`. It is incremented before the wait, so it reports `true` while a caller is queued. | `Agents/Orchestration/CouncilOrchestrator.cs` |
@@ -290,10 +290,10 @@ The data pages still return HTTP 500 without a provisioned `.env`. That is the s
 | Dependabot alerts (all states) | 0 |
 | Vulnerability alerts enabled | Yes (HTTP 204) |
 | Dependabot security updates | Enabled |
-| Dependabot version updates | **Was not configured** — added in this change |
-| Secret scanning | Disabled — recommend enabling |
-| Secret scanning push protection | Disabled — recommend enabling |
-| CI workflows | None |
+| Dependabot version updates | Configured in this change. Both scheduled runs completed and opened 0 pull requests. |
+| Secret scanning | Disabled. Enabling is blocked by an enterprise policy. |
+| Secret scanning push protection | Disabled. Enabling is blocked by an enterprise policy. |
+| CI workflows | Added in this change. The first run on `main` passed. |
 
 ## Package updates applied
 
@@ -342,6 +342,6 @@ Runtime verification was not possible. No `.env` is configured on this machine, 
 
 ## Recommended next steps
 
-1. Enable secret scanning and push protection. This needs a repository-settings change and was not done automatically.
+1. Ask an enterprise owner to allow secret scanning and push protection on this repository. The change is currently blocked by an enterprise policy.
 2. Add a test project so future dependency bumps have a runtime signal. The CI workflow is ready to run `dotnet test` once one exists.
 3. If remote hosting is ever introduced, remove the `ALLOW_REMOTE_ACCESS` escape hatch and add Entra ID authentication plus `[Authorize]` on the hub and the settings pages.
