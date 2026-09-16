@@ -260,7 +260,7 @@
     }
 
     private static readonly MarkdownPipeline _mdPipeline = new MarkdownPipelineBuilder()
-        .UseAdvancedExtensions().Build();
+        .UseAdvancedExtensions().DisableHtml().Build();
 
     // Always label by the configured display name (Persona.Name); fall back to the raw key, never a role.
     private static string SpeakerName(string key) =>

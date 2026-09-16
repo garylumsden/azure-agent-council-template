@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+<rect width="1440" height="900" fill="#ffffff"/>
+<text x="40" y="48" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="40" dy="0">Concept 1 — Persistent Council Rail + Live River</tspan>
+</text>
+<text x="40" y="87" font-family="Segoe UI,Arial,sans-serif" font-size="15" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="40" dy="0">Best default: one page, no document scroll. The roster stays fixed. Only the river and evidence panes scroll.</tspan>
+</text>
+<rect x="40" y="130" width="1360" height="730" rx="8" fill="transparent" stroke="#605E5C" stroke-width="2"/>
+<rect x="60" y="150" width="1320" height="58" rx="8" fill="#FDE7E9" stroke="#D13438" stroke-width="1"/>
+<text x="72" y="174" font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="72" dy="0">ON AIR  •  Debate  •  Round 2 of 4     Active: Priya — Security review</tspan>
+</text>
+<text x="72" y="200" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="72" dy="0">Sticky session strip: phase, elapsed time, pause auto-follow, and View Document.</tspan>
+</text>
+<rect x="60" y="225" width="245" height="615" rx="8" fill="transparent" stroke="#0078D4" stroke-width="2"/>
+<text x="78" y="255" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="78" dy="0">COUNCIL — always visible</tspan>
+</text>
+<ellipse cx="101.0" cy="306.0" rx="21.0" ry="21.0" fill="#DFF6DD" stroke="#107C10" stroke-width="2"/>
+<text x="102.0" y="307" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="middle">
+<tspan x="102.0" dy="0">PR</tspan>
+</text>
+<text x="132" y="299" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="132" dy="0">Priya</tspan>
+</text>
+<text x="132" y="318" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="132" dy="0">Speaking</tspan>
+</text>
+<ellipse cx="101.0" cy="388.0" rx="21.0" ry="21.0" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="102.0" y="389" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="middle">
+<tspan x="102.0" dy="0">AL</tspan>
+</text>
+<text x="132" y="381" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="132" dy="0">Alex</tspan>
+</text>
+<text x="132" y="400" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="132" dy="0">Hand raised</tspan>
+</text>
+<ellipse cx="101.0" cy="470.0" rx="21.0" ry="21.0" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="102.0" y="471" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="middle">
+<tspan x="102.0" dy="0">MI</tspan>
+</text>
+<text x="132" y="463" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="132" dy="0">Mina</tspan>
+</text>
+<text x="132" y="482" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="132" dy="0">Listening</tspan>
+</text>
+<ellipse cx="101.0" cy="552.0" rx="21.0" ry="21.0" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="102.0" y="553" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="middle">
+<tspan x="102.0" dy="0">JO</tspan>
+</text>
+<text x="132" y="545" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="132" dy="0">Jon</tspan>
+</text>
+<text x="132" y="564" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="132" dy="0">Assessing</tspan>
+</text>
+<ellipse cx="101.0" cy="634.0" rx="21.0" ry="21.0" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="102.0" y="635" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="middle">
+<tspan x="102.0" dy="0">CH</tspan>
+</text>
+<text x="132" y="627" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="132" dy="0">Chair</tspan>
+</text>
+<text x="132" y="646" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="132" dy="0">Synthesising</tspan>
+</text>
+<ellipse cx="101.0" cy="716.0" rx="21.0" ry="21.0" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="102.0" y="717" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="middle">
+<tspan x="102.0" dy="0">NE</tspan>
+</text>
+<text x="132" y="709" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="132" dy="0">Nexus</tspan>
+</text>
+<text x="132" y="728" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="132" dy="0">Waiting</tspan>
+</text>
+<rect x="320" y="225" width="690" height="92" rx="8" fill="#DFF6DD" stroke="#107C10" stroke-width="1"/>
+<text x="332" y="249" font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="332" dy="0">Pinned Now — Priya</tspan>
+</text>
+<text x="332" y="275" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="332" dy="0">Large avatar • live status • current sentence • source count. Stays visible while the river moves.</tspan>
+</text>
+<rect x="320" y="332" width="690" height="508" rx="8" fill="transparent" stroke="#605E5C" stroke-width="2"/>
+<text x="340" y="361" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="340" dy="0">LIVE RIVER</tspan>
+</text>
+<rect x="340" y="390" width="650" height="76" rx="8" fill="#E8DAEF" stroke="#5C2D91" stroke-width="1"/>
+<text x="352" y="412" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="352" dy="0">Moderator</tspan>
+</text>
+<text x="352" y="440" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="352" dy="0">The floor is open.</tspan>
+</text>
+<rect x="340" y="484" width="650" height="76" rx="8" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="352" y="506" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="352" dy="0">Alex</tspan>
+</text>
+<text x="352" y="534" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="352" dy="0">I support the proposal if…</tspan>
+</text>
+<rect x="340" y="578" width="650" height="76" rx="8" fill="#DFF6DD" stroke="#107C10" stroke-width="1"/>
+<text x="352" y="600" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="352" dy="0">Priya • LIVE</tspan>
+</text>
+<text x="352" y="628" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="352" dy="0">The access boundary needs…</tspan>
+</text>
+<rect x="340" y="672" width="650" height="76" rx="8" fill="#FFF4CE" stroke="#F7630C" stroke-width="1"/>
+<text x="352" y="694" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="352" dy="0">System</tspan>
+</text>
+<text x="352" y="722" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="352" dy="0">3 citations attached</tspan>
+</text>
+<rect x="780" y="790" width="200" height="34" rx="8" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="792" y="811" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="792" dy="0">↓ Jump to newest</tspan>
+</text>
+<rect x="1025" y="225" width="355" height="615" rx="8" fill="transparent" stroke="#F7630C" stroke-width="2"/>
+<text x="1043" y="255" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="1043" dy="0">CONTEXT &amp; EVIDENCE</tspan>
+</text>
+<rect x="1045" y="285" width="315" height="115" rx="8" fill="#F3F2F1" stroke="#605E5C" stroke-width="1"/>
+<text x="1057" y="308" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="1057" dy="0">Dossier</tspan>
+</text>
+<text x="1057" y="335" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="1057" dy="0">Summary stays visible. Open the full document in this pane, not a modal.</tspan>
+</text>
+<rect x="1045" y="415" width="315" height="150" rx="8" fill="#FFF4CE" stroke="#F7630C" stroke-width="1"/>
+<text x="1057" y="438" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="1057" dy="0">Live Evidence</tspan>
+</text>
+<text x="1057" y="465" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="1057" dy="0">• 6 citations</tspan>
+<tspan x="1057" dy="14.3">• 2 conflicts</tspan>
+<tspan x="1057" dy="14.3">• 1 missing source</tspan>
+</text>
+<rect x="1045" y="580" width="315" height="145" rx="8" fill="#E8DAEF" stroke="#5C2D91" stroke-width="1"/>
+<text x="1057" y="603" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="1057" dy="0">Position Delta</tspan>
+</text>
+<text x="1057" y="630" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="1057" dy="0">Alex: Support → Conditions</tspan>
+<tspan x="1057" dy="14.3">Priya: Reviewing</tspan>
+<tspan x="1057" dy="14.3">Chair: Waiting</tspan>
+</text>
+<rect x="1045" y="740" width="315" height="80" rx="8" fill="#DFF6DD" stroke="#107C10" stroke-width="1"/>
+<text x="1057" y="763" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="1057" dy="0">Assessment Preview</tspan>
+</text>
+<text x="1057" y="790" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="1057" dy="0">Appears during synthesis.</tspan>
+</text>
+</svg>

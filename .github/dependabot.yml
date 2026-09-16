@@ -1,0 +1,45 @@
+version: 2
+
+updates:
+  - package-ecosystem: nuget
+    directory: /src
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      microsoft-extensions:
+        patterns:
+          - "Microsoft.Extensions.*"
+        update-types:
+          - minor
+          - patch
+      azure-sdk:
+        patterns:
+          - "Azure.*"
+          - "Microsoft.Azure.*"
+        update-types:
+          - minor
+          - patch
+      observability:
+        patterns:
+          - "OpenTelemetry.*"
+          - "Microsoft.ApplicationInsights.*"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Pinned: Azure.AI.Extensions.OpenAI 2.0.0 calls a ResponsesClient
+      # constructor removed in OpenAI 2.11.0 (runtime MissingMethodException).
+      - dependency-name: OpenAI
+      # Pinned: 10.7.0+ forces OpenAI 2.11.0.
+      - dependency-name: Microsoft.Extensions.AI.OpenAI
+      # Pinned: 1.11.x+ Foundry bridge is preview-only and force-pins
+      # Azure.AI.Projects 2.1.0-beta.3, which breaks the CSDL workflow path.
+      - dependency-name: Microsoft.Agents.AI.Foundry
+      # Pinned prerelease: ships KnowledgeBases models + 2026-05-01-preview.
+      - dependency-name: Azure.Search.Documents
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

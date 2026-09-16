@@ -272,7 +272,7 @@ else
     [Parameter] public string AssessmentId { get; set; } = "";
 
     private static readonly MarkdownPipeline _mdPipeline = new MarkdownPipelineBuilder()
-        .UseAdvancedExtensions().Build();
+        .UseAdvancedExtensions().DisableHtml().Build();
 
     private Assessment? _assessment;
     private IReadOnlyList<Nexus>? _nexuses;

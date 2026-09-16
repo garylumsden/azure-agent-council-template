@@ -220,6 +220,55 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// LOCAL-ONLY OPERATING MODEL
+// The app has no authentication. Every request must therefore originate from this machine.
+// Set ALLOW_REMOTE_ACCESS=true only if you add authentication first.
+var allowRemote = string.Equals(
+    Environment.GetEnvironmentVariable("ALLOW_REMOTE_ACCESS"), "true", StringComparison.OrdinalIgnoreCase);
+
+if (allowRemote)
+{
+    app.Services.GetRequiredService<ILoggerFactory>()
+        .CreateLogger("Startup")
+        .LogWarning("ALLOW_REMOTE_ACCESS is set. The app has no authentication — do not expose it on an untrusted network.");
+}
+else
+{
+    app.Use(async (context, next) =>
+    {
+        var remoteIp = context.Connection.RemoteIpAddress;
+        if (remoteIp is not null && !System.Net.IPAddress.IsLoopback(remoteIp))
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await context.Response.WriteAsync("This application accepts local connections only.");
+            return;
+        }
+
+        await next();
+    });
+}
+
+// Baseline response headers. The CSP allows the inline Blazor boot script and the
+// websocket used by SignalR, and blocks framing and content sniffing.
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers["X-Content-Type-Options"] = "nosniff";
+    headers["X-Frame-Options"] = "DENY";
+    headers["Referrer-Policy"] = "no-referrer";
+    headers["Content-Security-Policy"] =
+        "default-src 'self'; " +
+        "img-src 'self' data: blob:; " +
+        "style-src 'self' 'unsafe-inline'; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+        "connect-src 'self' ws: wss:; " +
+        "frame-ancestors 'none'; " +
+        "base-uri 'self'; " +
+        "form-action 'self'";
+    await next();
+});
+
 app.UseAntiforgery();
 
 app.MapStaticAssets();

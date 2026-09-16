@@ -58,20 +58,22 @@ internal static class AssessmentParser
         }
 
         var conditions = new List<string>();
-        if (root.TryGetProperty("conditions", out var conditionsEl))
+        if (root.TryGetProperty("conditions", out var conditionsEl) && conditionsEl.ValueKind == JsonValueKind.Array)
         {
             foreach (var c in conditionsEl.EnumerateArray())
                 conditions.Add(c.GetString() ?? "");
         }
 
         var dissent = new List<Dissent>();
-        if (root.TryGetProperty("dissent", out var dissentEl))
+        if (root.TryGetProperty("dissent", out var dissentEl) && dissentEl.ValueKind == JsonValueKind.Array)
         {
             foreach (var d in dissentEl.EnumerateArray())
             {
+                if (d.ValueKind != JsonValueKind.Object) continue;
                 dissent.Add(new Dissent
                 {
-                    Member = d.GetProperty("member").GetString() ?? "Unknown",
+                    Member = d.TryGetProperty("member", out var dm) && dm.ValueKind == JsonValueKind.String
+                        ? dm.GetString() ?? "Unknown" : "Unknown",
                     Concern = d.TryGetProperty("concern", out var concern)
                         ? concern.GetString() ?? "" : ""
                 });
@@ -79,14 +81,17 @@ internal static class AssessmentParser
         }
 
         var risks = new List<Risk>();
-        if (root.TryGetProperty("risks", out var risksEl))
+        if (root.TryGetProperty("risks", out var risksEl) && risksEl.ValueKind == JsonValueKind.Array)
         {
             foreach (var r in risksEl.EnumerateArray())
             {
+                if (r.ValueKind != JsonValueKind.Object) continue;
                 risks.Add(new Risk
                 {
-                    Category = r.GetProperty("category").GetString() ?? "Unknown",
-                    Description = r.GetProperty("description").GetString() ?? "",
+                    Category = r.TryGetProperty("category", out var cat) && cat.ValueKind == JsonValueKind.String
+                        ? cat.GetString() ?? "Unknown" : "Unknown",
+                    Description = r.TryGetProperty("description", out var desc) && desc.ValueKind == JsonValueKind.String
+                        ? desc.GetString() ?? "" : "",
                     Mitigation = r.TryGetProperty("mitigation", out var m) ? m.GetString() ?? "" : ""
                 });
             }

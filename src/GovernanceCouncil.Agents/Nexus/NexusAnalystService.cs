@@ -183,7 +183,7 @@ public sealed class NexusAnalystService
         return $"{a.DossierTitle}. Recommendation: {a.OverallRecommendation}. Conditions: {conditions}. Risks: {risks}.";
     }
 
-    private static List<Nexus> ParseNexuses(string response, string sourceAssessmentId)
+    private List<Nexus> ParseNexuses(string response, string sourceAssessmentId)
     {
         // Extract JSON array from the response (may be wrapped in markdown code fences)
         var json = response;
@@ -192,17 +192,47 @@ public sealed class NexusAnalystService
         if (jsonStart >= 0 && jsonEnd > jsonStart)
             json = response[jsonStart..(jsonEnd + 1)];
 
-        using var doc = JsonDocument.Parse(json);
+        JsonDocument doc;
+        try
+        {
+            doc = JsonDocument.Parse(json);
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "Nexus Analyst returned unparseable JSON for assessment {AssessmentId}", sourceAssessmentId);
+            return [];
+        }
+
+        using (doc)
+        {
+            return ParseNexusArray(doc.RootElement, sourceAssessmentId);
+        }
+    }
+
+    private static List<Nexus> ParseNexusArray(JsonElement root, string sourceAssessmentId)
+    {
         var nexuses = new List<Nexus>();
 
-        foreach (var el in doc.RootElement.EnumerateArray())
+        if (root.ValueKind != JsonValueKind.Array)
+            return nexuses;
+
+        foreach (var el in root.EnumerateArray())
         {
-            var nexusTypeStr = el.GetProperty("nexusType").GetString() ?? "Implication";
+            if (el.ValueKind != JsonValueKind.Object) continue;
+
+            var nexusTypeStr = el.TryGetProperty("nexusType", out var nt) && nt.ValueKind == JsonValueKind.String
+                ? nt.GetString() ?? "Implication"
+                : "Implication";
             if (!Enum.TryParse<NexusType>(nexusTypeStr, ignoreCase: true, out var nexusType))
                 nexusType = NexusType.Implication;
 
-            var targetId = el.TryGetProperty("targetAssessmentId", out var tid)
+            var targetId = el.TryGetProperty("targetAssessmentId", out var tid) && tid.ValueKind == JsonValueKind.String
                 ? tid.GetString() ?? "" : "";
+
+            // A nexus links two assessments. Without a target it is not a link — drop it rather
+            // than persist an orphan that no query can resolve.
+            if (string.IsNullOrWhiteSpace(targetId)) continue;
+            if (string.Equals(targetId, sourceAssessmentId, StringComparison.OrdinalIgnoreCase)) continue;
 
             // Deterministic ID: same source+target+type always produces the same nexus ID.
             // This ensures Cosmos upsert overwrites existing nexuses instead of creating duplicates.
@@ -210,9 +240,9 @@ public sealed class NexusAnalystService
             var nexusId = $"NX-{Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(compositeKey)))[..12].ToLowerInvariant()}";
 
             var nexusPoints = new List<NexusPoint>();
-            var sourceExcerpt = el.TryGetProperty("sourceExcerpt", out var se) ? se.GetString() ?? "" : "";
-            var targetExcerpt = el.TryGetProperty("targetExcerpt", out var te) ? te.GetString() ?? "" : "";
-            var relationship = el.TryGetProperty("relationship", out var rel) ? rel.GetString() ?? "" : "";
+            var sourceExcerpt = el.TryGetProperty("sourceExcerpt", out var se) && se.ValueKind == JsonValueKind.String ? se.GetString() ?? "" : "";
+            var targetExcerpt = el.TryGetProperty("targetExcerpt", out var te) && te.ValueKind == JsonValueKind.String ? te.GetString() ?? "" : "";
+            var relationship = el.TryGetProperty("relationship", out var rel) && rel.ValueKind == JsonValueKind.String ? rel.GetString() ?? "" : "";
 
             if (!string.IsNullOrEmpty(sourceExcerpt) || !string.IsNullOrEmpty(targetExcerpt))
             {
@@ -234,7 +264,7 @@ public sealed class NexusAnalystService
                 DiscoveredBy = CouncilMembers.NexusAnalyst.Name,
                 DiscoveredDate = DateTimeOffset.UtcNow,
                 NexusPoints = nexusPoints,
-                Confidence = el.TryGetProperty("confidence", out var c) ? c.GetString() ?? "Medium" : "Medium",
+                Confidence = el.TryGetProperty("confidence", out var c) && c.ValueKind == JsonValueKind.String ? c.GetString() ?? "Medium" : "Medium",
                 Status = "Active"
             });
         }

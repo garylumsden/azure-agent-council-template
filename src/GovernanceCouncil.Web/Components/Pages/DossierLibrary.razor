@@ -10,6 +10,7 @@
 @inject CouncilOrchestrator Orchestrator
 @inject GovernanceCouncil.Agents.Provisioning.RaiPolicyManager RaiPolicy
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 @rendermode InteractiveServer
 
 <PageTitle>Dossiers</PageTitle>
@@ -122,7 +123,10 @@
                 <option value="Medium">Standard</option>
                 <option value="High">Relaxed</option>
             </select>
-            <div class="form-text small">Changing this is applied at the start of the next deliberation (a few seconds).</div>
+            <div class="form-text small">
+                Changing this is applied at the start of the next deliberation (a few seconds).
+                <strong>It changes the account-global policy for every app that uses this Azure AI account.</strong>
+            </div>
         </div>
     </div>
 @if (_dossiers is null)
@@ -275,15 +279,32 @@ else
         {
             var deliberationId = $"DL-{DateTime.UtcNow:yyyy}-{Guid.NewGuid().ToString("N")[..8]}";
 
-            // Create the record as Pending. The live page starts the debate AFTER it has joined the
-            // SignalR group, so the viewer never misses the opening phases (Independent Assessment).
-            await Orchestrator.CreateDeliberationRecordAsync(dossierId, deliberationId);
-
             // Only pass the content-safety level when the presenter actually changed it from the live
             // value — otherwise there's nothing to apply (no control-plane call, no "applying" delay).
             var changed = !string.IsNullOrEmpty(_selectedViolence)
                 && !string.Equals(_selectedViolence, _currentSafety, StringComparison.OrdinalIgnoreCase);
-            var safetyQuery = changed ? $"&cs={_selectedViolence}" : "";
+
+            // The content-safety policy is account-global: it affects every application that uses
+            // this Azure AI account, not just this deliberation. Require an explicit confirmation.
+            if (changed)
+            {
+                var confirmed = await JS.InvokeAsync<bool>("confirm",
+                    $"Change the content-safety policy from {SafetyLabel(_currentSafety)} to {SafetyLabel(_selectedViolence)}?\n\n" +
+                    "This changes the ACCOUNT-GLOBAL Azure AI policy and affects every application " +
+                    "that uses this Azure AI account. Continue?");
+
+                if (!confirmed)
+                {
+                    _message = "Content-safety change cancelled. The deliberation was not started.";
+                    return;
+                }
+            }
+
+            // Create the record as Pending. The live page starts the debate AFTER it has joined the
+            // SignalR group, so the viewer never misses the opening phases (Independent Assessment).
+            await Orchestrator.CreateDeliberationRecordAsync(dossierId, deliberationId);
+
+            var safetyQuery = changed ? $"&cs={Uri.EscapeDataString(_selectedViolence)}" : "";
             Navigation.NavigateTo($"/deliberation/{deliberationId}/live?dossierId={dossierId}{safetyQuery}");
         }
         catch (Exception ex)

@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+<rect width="1440" height="900" fill="#ffffff"/>
+<text x="40" y="48" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="40" dy="0">Concept 3 — Council Command Center</tspan>
+</text>
+<text x="40" y="87" font-family="Segoe UI,Arial,sans-serif" font-size="15" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="40" dy="0">Best for expert operators: a dense three-pane workspace with a permanent avatar strip and independent pane scrolling.</tspan>
+</text>
+<rect x="40" y="130" width="1360" height="730" rx="8" fill="transparent" stroke="#605E5C" stroke-width="2"/>
+<rect x="60" y="150" width="1320" height="54" rx="8" fill="#FDE7E9" stroke="#D13438" stroke-width="1"/>
+<text x="72" y="173" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="72" dy="0">Council Command Center     ON AIR     Round 2/4     07:42 elapsed     Document     Follow Live</tspan>
+</text>
+<rect x="60" y="219" width="1320" height="78" rx="8" fill="transparent" stroke="#0078D4" stroke-width="2"/>
+<text x="78" y="244" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="78" dy="0">PERMANENT AGENT STRIP</tspan>
+</text>
+<ellipse cx="304.0" cy="251.0" rx="19.0" ry="19.0" fill="#DFF6DD" stroke="#107C10" stroke-width="2"/>
+<text x="304.0" y="252" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">
+<tspan x="304.0" dy="0">PR</tspan>
+</text>
+<text x="331" y="240" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="331" dy="0">Speaking</tspan>
+</text>
+<text x="331" y="259" font-family="Segoe UI,Arial,sans-serif" font-size="9" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="331" dy="0">agent status</tspan>
+</text>
+<ellipse cx="478.0" cy="251.0" rx="19.0" ry="19.0" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="478.0" y="252" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">
+<tspan x="478.0" dy="0">AL</tspan>
+</text>
+<text x="505" y="240" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="505" dy="0">Raised</tspan>
+</text>
+<text x="505" y="259" font-family="Segoe UI,Arial,sans-serif" font-size="9" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="505" dy="0">agent status</tspan>
+</text>
+<ellipse cx="652.0" cy="251.0" rx="19.0" ry="19.0" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="652.0" y="252" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">
+<tspan x="652.0" dy="0">MI</tspan>
+</text>
+<text x="679" y="240" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="679" dy="0">Ready</tspan>
+</text>
+<text x="679" y="259" font-family="Segoe UI,Arial,sans-serif" font-size="9" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="679" dy="0">agent status</tspan>
+</text>
+<ellipse cx="826.0" cy="251.0" rx="19.0" ry="19.0" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="826.0" y="252" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">
+<tspan x="826.0" dy="0">JO</tspan>
+</text>
+<text x="853" y="240" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="853" dy="0">Ready</tspan>
+</text>
+<text x="853" y="259" font-family="Segoe UI,Arial,sans-serif" font-size="9" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="853" dy="0">agent status</tspan>
+</text>
+<ellipse cx="1000.0" cy="251.0" rx="19.0" ry="19.0" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="1000.0" y="252" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">
+<tspan x="1000.0" dy="0">CH</tspan>
+</text>
+<text x="1027" y="240" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="1027" dy="0">Chair</tspan>
+</text>
+<text x="1027" y="259" font-family="Segoe UI,Arial,sans-serif" font-size="9" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="1027" dy="0">agent status</tspan>
+</text>
+<ellipse cx="1174.0" cy="251.0" rx="19.0" ry="19.0" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="1174.0" y="252" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="700" fill="#000000" text-anchor="middle">
+<tspan x="1174.0" dy="0">NX</tspan>
+</text>
+<text x="1201" y="240" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="1201" dy="0">Nexus</tspan>
+</text>
+<text x="1201" y="259" font-family="Segoe UI,Arial,sans-serif" font-size="9" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="1201" dy="0">agent status</tspan>
+</text>
+<rect x="60" y="315" width="280" height="525" rx="8" fill="transparent" stroke="#5C2D91" stroke-width="2"/>
+<text x="78" y="345" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="78" dy="0">SESSION MAP</tspan>
+</text>
+<rect x="80" y="375" width="240" height="80" rx="8" fill="#DFF6DD" stroke="#107C10" stroke-width="1"/>
+<text x="92" y="397" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="92" dy="0">1  Assessment  ✓</tspan>
+</text>
+<text x="92" y="425" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="92" dy="0">6 positions received</tspan>
+</text>
+<rect x="80" y="470" width="240" height="105" rx="8" fill="#E8DAEF" stroke="#5C2D91" stroke-width="1"/>
+<text x="92" y="492" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="92" dy="0">2  Debate  ●</tspan>
+</text>
+<text x="92" y="520" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="92" dy="0">Round 2</tspan>
+<tspan x="92" dy="14.3">Priya speaking</tspan>
+<tspan x="92" dy="14.3">Alex queued</tspan>
+</text>
+<rect x="80" y="590" width="240" height="80" rx="8" fill="#F3F2F1" stroke="#605E5C" stroke-width="1"/>
+<text x="92" y="612" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="92" dy="0">3  Synthesis  ○</tspan>
+</text>
+<text x="92" y="640" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="92" dy="0">Chair waiting</tspan>
+</text>
+<rect x="80" y="685" width="240" height="80" rx="8" fill="#F3F2F1" stroke="#605E5C" stroke-width="1"/>
+<text x="92" y="707" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="92" dy="0">4  Nexus  ○</tspan>
+</text>
+<text x="92" y="735" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="92" dy="0">Not started</tspan>
+</text>
+<rect x="80" y="780" width="240" height="40" rx="8" fill="#FFF4CE" stroke="#F7630C" stroke-width="1"/>
+<text x="92" y="800" font-family="Segoe UI,Arial,sans-serif" font-size="10" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="92" dy="0">Alerts: 1 source gap</tspan>
+</text>
+<rect x="355" y="315" width="645" height="525" rx="8" fill="transparent" stroke="#605E5C" stroke-width="2"/>
+<text x="375" y="345" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="375" dy="0">LIVE RIVER</tspan>
+</text>
+<rect x="375" y="375" width="605" height="72" rx="8" fill="#DFF6DD" stroke="#107C10" stroke-width="1"/>
+<text x="387" y="397" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="387" dy="0">Pinned live turn — Priya</tspan>
+</text>
+<text x="387" y="425" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="387" dy="0">Current text streams here without moving the reader.</tspan>
+</text>
+<rect x="375" y="465" width="605" height="74" rx="8" fill="#E8DAEF" stroke="#5C2D91" stroke-width="1"/>
+<text x="387" y="486" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="387" dy="0">Moderator</tspan>
+</text>
+<text x="387" y="515" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="387" dy="0">Round 2 prompt</tspan>
+</text>
+<rect x="375" y="557" width="605" height="74" rx="8" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="387" y="578" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="387" dy="0">Alex</tspan>
+</text>
+<text x="387" y="607" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="387" dy="0">Position and response</tspan>
+</text>
+<rect x="375" y="649" width="605" height="74" rx="8" fill="#FFF4CE" stroke="#F7630C" stroke-width="1"/>
+<text x="387" y="670" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="387" dy="0">Mina</tspan>
+</text>
+<text x="387" y="699" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="387" dy="0">Challenge with citation</tspan>
+</text>
+<rect x="760" y="765" width="200" height="40" rx="8" fill="#CFE4FA" stroke="#0078D4" stroke-width="1"/>
+<text x="772" y="786" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="772" dy="0">↓ 3 new turns</tspan>
+</text>
+<rect x="1015" y="315" width="365" height="525" rx="8" fill="transparent" stroke="#F7630C" stroke-width="2"/>
+<text x="1033" y="345" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="1033" dy="0">ASSESSMENT WORKBENCH</tspan>
+</text>
+<rect x="1035" y="375" width="325" height="120" rx="8" fill="#E8DAEF" stroke="#5C2D91" stroke-width="1"/>
+<text x="1047" y="397" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="1047" dy="0">Position Matrix</tspan>
+</text>
+<text x="1047" y="425" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="1047" dy="0">Support  2</tspan>
+<tspan x="1047" dy="14.3">Conditions  3</tspan>
+<tspan x="1047" dy="14.3">Oppose  1</tspan>
+</text>
+<rect x="1035" y="510" width="325" height="135" rx="8" fill="#FFF4CE" stroke="#F7630C" stroke-width="1"/>
+<text x="1047" y="532" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="1047" dy="0">Evidence Queue</tspan>
+</text>
+<text x="1047" y="560" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="1047" dy="0">6 verified</tspan>
+<tspan x="1047" dy="14.3">2 contested</tspan>
+<tspan x="1047" dy="14.3">1 source gap</tspan>
+</text>
+<rect x="1035" y="660" width="325" height="160" rx="8" fill="#DFF6DD" stroke="#107C10" stroke-width="1"/>
+<text x="1047" y="682" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" fill="#000000" text-anchor="start">
+<tspan x="1047" dy="0">Chair Draft</tspan>
+</text>
+<text x="1047" y="710" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="400" fill="#000000" text-anchor="start">
+<tspan x="1047" dy="0">Recommendation preview</tspan>
+<tspan x="1047" dy="14.3">Conditions</tspan>
+<tspan x="1047" dy="14.3">Dissent</tspan>
+<tspan x="1047" dy="14.3">Risks</tspan>
+</text>
+</svg>

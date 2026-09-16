@@ -55,8 +55,12 @@ public sealed class CouncilOrchestrator
 
     private readonly SemaphoreSlim _reprovisionLock = new(1, 1);
 
-    /// <summary>True while a runtime profile switch is re-provisioning the agents.</summary>
-    public bool IsReprovisioning { get; private set; }
+    // Counts callers that are either queued on the lock or actively re-provisioning, so the UI
+    // reports "busy" from the moment a request arrives rather than only once the lock is won.
+    private int _reprovisionDepth;
+
+    /// <summary>True while a runtime profile switch is queued or re-provisioning the agents.</summary>
+    public bool IsReprovisioning => Volatile.Read(ref _reprovisionDepth) > 0;
 
     /// <summary>
     /// Applies the council settings (model profile, grounding provider, agent runtime) in one shot and
@@ -69,10 +73,10 @@ public sealed class CouncilOrchestrator
         CouncilModels.ModelProfile profile, Grounding.Provider provider, AgentRuntime.Mode runtime,
         CancellationToken ct = default)
     {
+        Interlocked.Increment(ref _reprovisionDepth);
         await _reprovisionLock.WaitAsync(ct);
         try
         {
-            IsReprovisioning = true;
             _logger.LogInformation(
                 "Applying council settings: profile {Profile}, grounding {Provider}, runtime {Runtime}",
                 profile, provider, runtime);
@@ -100,8 +104,8 @@ public sealed class CouncilOrchestrator
         }
         finally
         {
-            IsReprovisioning = false;
             _reprovisionLock.Release();
+            Interlocked.Decrement(ref _reprovisionDepth);
         }
     }
 
@@ -113,7 +117,8 @@ public sealed class CouncilOrchestrator
     /// Called from the UI thread so the live page can find the record immediately.
     /// </summary>
     // Guards against starting the same deliberation twice (e.g. a refresh or a second tab). Static so
-    // the guard holds regardless of the orchestrator's DI lifetime.
+    // the guard holds regardless of the orchestrator's DI lifetime. The entry is removed when the run
+    // ends so the map cannot grow without bound and a failed run can be retried in-process.
     private static readonly ConcurrentDictionary<string, byte> _startedDeliberations = new();
 
     public async Task CreateDeliberationRecordAsync(string dossierId, string deliberationId, CancellationToken ct = default)
@@ -141,7 +146,16 @@ public sealed class CouncilOrchestrator
         _ = Task.Run(async () =>
         {
             try { await RunDeliberationAsync(dossierId, existingDeliberationId: deliberationId, violenceThreshold: violenceThreshold); }
-            catch { /* failures are recorded on the deliberation record by the orchestrator */ }
+            catch (Exception ex)
+            {
+                // Failures are recorded on the deliberation record by the orchestrator.
+                _logger.LogError(ex, "Deliberation {DeliberationId} failed", deliberationId);
+            }
+            finally
+            {
+                // Release the guard so the map stays bounded and the run can be retried.
+                _startedDeliberations.TryRemove(deliberationId, out _);
+            }
         });
     }
 

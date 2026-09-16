@@ -232,7 +232,7 @@
     private static readonly System.Globalization.CultureInfo Ci = System.Globalization.CultureInfo.InvariantCulture;
 
     private static readonly MarkdownPipeline _mdPipeline = new MarkdownPipelineBuilder()
-        .UseAdvancedExtensions().Build();
+        .UseAdvancedExtensions().DisableHtml().Build();
 
     // Renders the persona avatar image inside the coloured circle, falling back to the initials text
     // if no avatar URL is present (every persona resolves to a role default, so this is a safety net).

@@ -36,14 +36,14 @@
          12.1.0-beta.1 ships the KnowledgeBases models + 2026-05-01-preview service version. -->
     <PackageReference Include="Azure.Search.Documents" Version="12.1.0-beta.1" />
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
-    <PackageReference Include="Microsoft.Agents.AI" Version="1.11.1" />
+    <PackageReference Include="Microsoft.Agents.AI" Version="1.21.0" />
     <PackageReference Include="Microsoft.Agents.AI.Foundry" Version="1.5.0" />
-    <PackageReference Include="Microsoft.Agents.AI.Workflows" Version="1.11.1" />
+    <PackageReference Include="Microsoft.Agents.AI.Workflows" Version="1.21.0" />
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.6.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
     <!-- Pin OpenTelemetry.Api to a non-vulnerable version to clear NU1902. -->
-    <PackageReference Include="OpenTelemetry.Api" Version="1.16.0" />
+    <PackageReference Include="OpenTelemetry.Api" Version="1.18.0" />
   </ItemGroup>
 
   <PropertyGroup>

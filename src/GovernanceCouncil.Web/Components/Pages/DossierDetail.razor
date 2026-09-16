@@ -71,6 +71,7 @@ else
 
     private static readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
+        .DisableHtml()
         .Build();
 
     protected override async Task OnInitializedAsync()

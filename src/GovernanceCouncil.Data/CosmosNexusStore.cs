@@ -7,6 +7,12 @@ using Microsoft.Extensions.Logging;
 
 internal sealed class CosmosNexusStore(Container container, ILogger<CosmosNexusStore> logger) : INexusStore
 {
+    /// <summary>Hard ceiling on items returned by any nexus query.</summary>
+    private const int MaxResults = 1000;
+
+    /// <summary>Server-side page size used when the caller does not set one.</summary>
+    private const int MaxPageSize = 100;
+
     public async Task<Nexus> GetAsync(string nexusId, string sourceAssessmentId, CancellationToken ct = default)
     {
         try
@@ -101,13 +107,25 @@ internal sealed class CosmosNexusStore(Container container, ILogger<CosmosNexusS
     {
         try
         {
+            // Cap the result set. These queries are cross-partition; without a ceiling a large
+            // container would page indefinitely and exhaust both RUs and memory.
+            options ??= new QueryRequestOptions();
+            options.MaxItemCount ??= MaxPageSize;
+
             using var iterator = container.GetItemQueryIterator<Nexus>(queryDef, requestOptions: options);
             var results = new List<Nexus>();
-            while (iterator.HasMoreResults)
+            while (iterator.HasMoreResults && results.Count < MaxResults)
             {
                 var page = await iterator.ReadNextAsync(ct);
                 results.AddRange(page);
             }
+
+            if (results.Count > MaxResults)
+            {
+                logger.LogWarning("Nexus query returned more than {MaxResults} items; the result was truncated", MaxResults);
+                results.RemoveRange(MaxResults, results.Count - MaxResults);
+            }
+
             return results;
         }
         catch (CosmosException ex)

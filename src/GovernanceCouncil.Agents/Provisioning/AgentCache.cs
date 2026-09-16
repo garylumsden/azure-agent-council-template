@@ -20,13 +20,17 @@ public sealed class AgentCache
     private const string ChairId = "chair";
     private const string ModeratorId = "moderator";
 
+    // Serialises LoadAsync/RefreshAsync so concurrent callers never observe a half-built roster.
+    private readonly SemaphoreSlim _loadLock = new(1, 1);
+    private volatile bool _isLoaded;
+
     /// <summary>Clean member agent names (e.g. <c>gc-cdio</c>) — no <c>-af</c> suffix. Index-aligned with <see cref="MemberAgents"/>.</summary>
     public string[] MemberNames { get; private set; } = [];
 
     public List<AIAgent> MemberAgents { get; private set; } = [];
     public AIAgent Chair { get; private set; } = null!;
     public AIAgent Moderator { get; private set; } = null!;
-    public bool IsLoaded { get; private set; }
+    public bool IsLoaded => _isLoaded;
 
     /// <summary>
     /// Fetches the tooled member agents, chair, and moderator from Foundry. Call once at startup.
@@ -34,30 +38,55 @@ public sealed class AgentCache
     /// </summary>
     public async Task LoadAsync(AIProjectClient projectClient, ILogger logger, CancellationToken ct = default)
     {
-        if (IsLoaded) return;
+        if (_isLoaded) return;
 
-        MemberNames = CouncilMembers.DeliberationMembers.Select(m => $"gc-{m.Id}").ToArray();
-        logger.LogInformation("AgentCache: fetching {Count} unified (tooled) agents from Foundry via AsAIAgent...",
-            MemberNames.Length + 2);
+        await _loadLock.WaitAsync(ct);
+        try
+        {
+            if (_isLoaded) return;
 
-        var memberTasks = MemberNames.Select(name => FetchAsync(projectClient, name, ct)).ToArray();
-        var chairTask = FetchAsync(projectClient, $"gc-{ChairId}", ct);
-        var moderatorTask = FetchAsync(projectClient, $"gc-{ModeratorId}", ct);
+            var memberNames = CouncilMembers.DeliberationMembers.Select(m => $"gc-{m.Id}").ToArray();
+            logger.LogInformation("AgentCache: fetching {Count} unified (tooled) agents from Foundry via AsAIAgent...",
+                memberNames.Length + 2);
 
-        await Task.WhenAll([.. memberTasks, chairTask, moderatorTask]);
+            var memberTasks = memberNames.Select(name => FetchAsync(projectClient, name, ct)).ToArray();
+            var chairTask = FetchAsync(projectClient, $"gc-{ChairId}", ct);
+            var moderatorTask = FetchAsync(projectClient, $"gc-{ModeratorId}", ct);
 
-        MemberAgents = memberTasks.Select(t => t.Result).ToList();
-        Chair = chairTask.Result;
-        Moderator = moderatorTask.Result;
-        IsLoaded = true;
+            var members = await Task.WhenAll(memberTasks);
+            var chair = await chairTask;
+            var moderator = await moderatorTask;
 
-        logger.LogInformation("AgentCache: {Count} agents cached successfully", MemberAgents.Count + 2);
+            // Publish the new roster as a unit, then flip the flag last.
+            MemberNames = memberNames;
+            MemberAgents = [.. members];
+            Chair = chair;
+            Moderator = moderator;
+            _isLoaded = true;
+
+            logger.LogInformation("AgentCache: {Count} agents cached successfully", MemberAgents.Count + 2);
+        }
+        finally
+        {
+            _loadLock.Release();
+        }
     }
 
     /// <summary>Forces a re-fetch of every agent — use after re-provisioning new agent versions.</summary>
     public async Task RefreshAsync(AIProjectClient projectClient, ILogger logger, CancellationToken ct = default)
     {
-        IsLoaded = false;
+        await _loadLock.WaitAsync(ct);
+        try
+        {
+            // Only the flag is cleared here; the published roster stays intact and readable
+            // until LoadAsync swaps in a complete replacement.
+            _isLoaded = false;
+        }
+        finally
+        {
+            _loadLock.Release();
+        }
+
         await LoadAsync(projectClient, logger, ct);
     }
 
@@ -66,10 +95,10 @@ public sealed class AgentCache
     /// <c>AsAIAgent(ProjectsAgentRecord)</c> overload (binds the latest version) — no version
     /// plumbing required.
     /// </summary>
-    private static Task<AIAgent> FetchAsync(AIProjectClient projectClient, string agentName, CancellationToken ct) =>
-        Task.Run(() =>
-        {
-            var record = projectClient.AgentAdministrationClient.GetAgent(agentName, ct).Value;
-            return (AIAgent)projectClient.AsAIAgent(record);
-        }, ct);
+    private static async Task<AIAgent> FetchAsync(AIProjectClient projectClient, string agentName, CancellationToken ct)
+    {
+        var record = (await projectClient.AgentAdministrationClient
+            .GetAgentAsync(agentName, cancellationToken: ct)).Value;
+        return (AIAgent)projectClient.AsAIAgent(record);
+    }
 }
