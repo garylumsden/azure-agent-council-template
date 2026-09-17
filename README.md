@@ -30,9 +30,16 @@ Open this repo in an editor with **GitHub Copilot** and run the **Scenario Archi
 Prefer to do it by hand? Copy `config/scenario.example.json` to `config/scenario.json` and edit it,
 then add a `config/prompts/<id>.md` for each member.
 
-### 2. Provision Azure (Bicep via `azd`)
+### 2. Sign in and provision Azure (Bicep via `azd`)
+
+Use the same Microsoft Entra user for provisioning and for running the app. The local process uses
+`DefaultAzureCredential`, which discovers this signed-in user through the Azure CLI. The user must
+have the RBAC roles that `azd up` assigns to the deploying principal.
 
 ```bash
+az login
+azd auth login
+
 # (Optional) supply a Microsoft Web IQ key so the Web IQ grounding tool is provisioned.
 # Web IQ is limited-access (preview) — request a key from the Web IQ team. Skip this to run
 # ungrounded, or switch grounding to Foundry IQ in the UI.
@@ -54,8 +61,23 @@ AAD, scope `https://api.microsoft.ai/.default`.)
 dotnet run --project src/GovernanceCouncil.Web
 ```
 
-The app **runs locally** and reads `config/scenario.json` at startup. Upload a Markdown dossier, choose
-a deliberation, and watch the council debate.
+The app **runs only on the local workstation** and reads `config/scenario.json` at startup. It is not
+a web-hosted, container-hosted, or multi-user service. The server rejects non-loopback requests with
+HTTP 403. Do not expose it through a tunnel, reverse proxy, port-forward, or remote host.
+
+The UI does not ask the user to sign in. The local server process authenticates to Foundry, Cosmos DB,
+Blob Storage, AI Search, and Azure control-plane APIs as the **signed-in Microsoft Entra user** through
+`DefaultAzureCredential`. Run `az login` with the same user that ran `azd up`. No API keys or app
+credentials are used. The Foundry project managed identity is separate: Foundry uses it for its own
+service-to-service access, but it is not the identity of the local web app.
+
+Upload a Markdown dossier, choose a deliberation, and watch the council debate.
+
+> [!IMPORTANT]
+> `ALLOW_REMOTE_ACCESS=true` disables the loopback guard for troubleshooting. It does not add
+> authentication. Do not set it for normal use.
+
+For Microsoft guidance, see [Foundry tools authentication and authorization using .NET](https://learn.microsoft.com/dotnet/ai/azure-ai-services-authentication).
 
 ---
 
@@ -202,5 +224,6 @@ propagate before the council debates.
 ## Conventions
 
 - **.NET 10**, C# 13 idioms (records, primary constructors, file-scoped namespaces).
-- **Identity-based auth everywhere** (`DefaultAzureCredential`) — no keys or connection strings.
+- **Local-only process** — loopback access only; no container, hosted-agent, tunnel, proxy, or remote-server path.
+- **User identity for Azure** — the local process uses the signed-in Microsoft Entra user through `DefaultAzureCredential`; no keys or connection strings.
 - **100% IaC** — all Azure resources via Bicep / `azd`.

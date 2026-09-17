@@ -24,7 +24,7 @@ graph LR
     style AppInsights fill:#1A7A7A,color:#fff
 ```
 
-> **Deployment**: Blazor Server app running locally or in a container. Not yet deployed as a Foundry Hosted Agent. All Azure resources provisioned via Bicep (`azd up`). Zero keys — Entra ID + RBAC everywhere.
+> **Runtime boundary**: The Blazor Server app runs only on the developer workstation. It is not container-hosted, web-hosted, or a Foundry Hosted Agent. The server accepts loopback requests only. All Azure resources are provisioned through Bicep (`azd up`). The local process uses the signed-in Microsoft Entra user through `DefaultAzureCredential`; there are no service keys.
 
 ## Detailed Architecture
 
@@ -150,13 +150,19 @@ graph TB
     %% =====================================================================
     %% Identity
     %% =====================================================================
-    EntraID["Microsoft Entra ID<br/>DefaultAzureCredential<br/>Zero-key authentication"]:::identity
+    LocalUser["Signed-in Microsoft Entra user<br/>Azure CLI / Visual Studio"]:::identity
+    DAC["Local Blazor process<br/>DefaultAzureCredential"]:::identity
+    ProjectIdentity["Foundry project<br/>managed identity"]:::identity
 
-    EntraID -.->|"RBAC role assignments"| FoundryProject
-    EntraID -.->|"RBAC role assignments"| AIServices
-    EntraID -.->|"RBAC role assignments"| CosmosDB
-    EntraID -.->|"RBAC role assignments"| BlobStorage
-    EntraID -.->|"RBAC role assignments"| SearchService
+    LocalUser -->|"credential discovery"| DAC
+    DAC -.->|"User token + RBAC"| FoundryProject
+    DAC -.->|"User token + RBAC"| AIServices
+    DAC -.->|"User token + RBAC"| CosmosDB
+    DAC -.->|"User token + RBAC"| BlobStorage
+    DAC -.->|"User token + RBAC"| SearchService
+    ProjectIdentity -.->|"Foundry service-to-service RBAC"| AIServices
+    ProjectIdentity -.->|"Foundry service-to-service RBAC"| BlobStorage
+    ProjectIdentity -.->|"Foundry service-to-service RBAC"| SearchService
 ```
 
 ## RBAC Model
@@ -167,7 +173,7 @@ graph LR
     classDef resource fill:#D4760A,stroke:#A35D08,color:#fff
     classDef role fill:#2D7D46,stroke:#1B5E2E,color:#fff,font-size:10px
 
-    User["👤 Deploying User"]:::principal
+    User["👤 Signed-in local user<br/>(deploying principal)"]:::principal
     ProjectMI["🤖 Project MI"]:::principal
     AIServicesMI["🤖 AI Services MI"]:::principal
     SearchMI["🤖 Search MI"]:::principal
@@ -207,13 +213,15 @@ graph LR
 graph TB
     classDef infra fill:#7B2D8E,stroke:#5A1F6A,color:#fff
     classDef deploy fill:#2D7D46,stroke:#1B5E2E,color:#fff
-    classDef container fill:#D4760A,stroke:#A35D08,color:#fff
 
-    Dev["Developer Workstation"]:::deploy
+    Dev["Developer Workstation<br/>Local-only Blazor Server"]:::deploy
+    UserIdentity["Signed-in Entra user<br/>DefaultAzureCredential"]:::deploy
     AZD["azd up<br/>(Azure Developer CLI)"]:::deploy
     Bicep["Bicep IaC<br/>main.bicep → resources.bicep<br/>model-deployment.bicep"]:::infra
 
+    UserIdentity -->|"provisions as deploying principal"| AZD
     Dev -->|"1. Provision infra"| AZD
+    UserIdentity -->|"2. authenticates local process"| Dev
     AZD --> Bicep
     Bicep -->|"Creates resource group<br/>rg-{environmentName}"| RG["Azure Resource Group"]:::infra
 
@@ -231,11 +239,21 @@ graph TB
     end
 
     RG --> RG_Contents
-
-    Dockerfile["Dockerfile<br/>SDK build → ASP.NET 10 runtime<br/>Port 8080"]:::container
-    Dev -->|"2. Run locally or<br/>deploy container"| Container["Container / Local Dev"]:::container
-    Dockerfile --> Container
+    Dev -->|"3. user-token requests<br/>over Azure SDKs"| RG_Contents
 ```
+
+The process binds to loopback and rejects non-loopback requests with HTTP 403. Do not place it behind
+a tunnel, reverse proxy, port-forward, container endpoint, or remote web host. `ALLOW_REMOTE_ACCESS=true`
+is a troubleshooting escape hatch only; it does not add authentication.
+
+The browser user does not authenticate to the app. The server process authenticates to Azure as the
+Microsoft Entra user signed in through Azure CLI or Visual Studio. `DefaultAzureCredential` obtains
+that user's token. The same user should run `azd up`, because the Bicep deployment grants that
+principal the required Foundry, Cosmos DB, Blob Storage, AI Search, monitoring, and RAI policy roles.
+The Foundry project managed identity is a different principal and handles Foundry service-to-service
+access only.
+
+Official guidance: [Foundry tools authentication and authorization using .NET](https://learn.microsoft.com/dotnet/ai/azure-ai-services-authentication).
 
 ## Data Flow — Deliberation Lifecycle
 

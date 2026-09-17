@@ -19,14 +19,20 @@ The engine is **scenario-neutral**. A concrete demo is created by configuration,
    `src/**`. Member rosters, ids, and counts are taken from the active scenario at runtime
    (`CouncilMembers` projects `Scenario.Current`). The Chair structured-output schema
    (`DebateSchemas`) is built from the live roster — keep it that way.
-3. **Identity-based auth, zero keys.** `DefaultAzureCredential` everywhere; `disableLocalAuth: true`
-   on AI Services; Cosmos/Blob/Search via AAD + RBAC. No keys, connection strings, or secrets in code.
+3. **Identity-based auth, zero keys.** The local web process uses the signed-in Microsoft Entra user
+   through `DefaultAzureCredential` for Foundry, Cosmos, Blob, Search, and Azure control-plane calls.
+   The user is the same deploying principal that receives RBAC roles from `azd up`. The Foundry project
+   managed identity is separate and is used only for Foundry service-to-service access. Keep
+   `disableLocalAuth: true` on AI Services. No keys, connection strings, or secrets in code.
 4. **100% Infrastructure as Code.** All Azure resources via Bicep (`infra/`), provisioned with `azd`.
    Verify resource schemas and use the latest stable API versions.
 5. **.NET 10.** C# 13 idioms — records, primary constructors, file-scoped namespaces, async throughout
    (no `.Result`/`.Wait()`). DI via `Microsoft.Extensions.DependencyInjection`.
-6. **Runs locally.** The Blazor Server app is run with `dotnet run --project src/GovernanceCouncil.Web`
-   and reads `config/scenario.json` at startup. There is no container/hosted-agent path.
+6. **Runs locally only.** Run the Blazor Server app with
+   `dotnet run --project src/GovernanceCouncil.Web`. It reads `config/scenario.json` at startup.
+   Keep the loopback-only request guard. Do not add a container, hosted-agent, App Service, tunnel,
+   reverse-proxy, port-forward, or remote-server path. `ALLOW_REMOTE_ACCESS` is troubleshooting-only
+   and does not add authentication.
 7. **Keep docs in sync.** Update `README.md`, `ARCHITECTURE.md`, `SPEC.md`, and this file when the
    framework, config model, model deployments, or key technical decisions change.
 

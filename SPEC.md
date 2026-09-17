@@ -45,9 +45,15 @@ decisions interconnect over time. The template is **scenario-neutral**; a concre
 
 ## Non-functional requirements
 
-- **Identity-based auth, zero keys** — `DefaultAzureCredential`, `disableLocalAuth: true`, RBAC.
+- **Identity-based auth, zero keys** — the local server process uses the signed-in Microsoft Entra
+  user through `DefaultAzureCredential` for Foundry and all Azure data/control-plane calls. The same
+  user runs `azd up` and receives the required RBAC roles. The Foundry project managed identity is a
+  separate service-to-service principal. Keep `disableLocalAuth: true`; do not add keys.
 - **100% IaC** — all Azure resources via Bicep / `azd up`.
-- **Runs locally** — `dotnet run --project src/GovernanceCouncil.Web`; no container/hosted-agent path.
+- **Local-only runtime** — run `dotnet run --project src/GovernanceCouncil.Web`. The app accepts
+  loopback requests only. It has no container, hosted-agent, App Service, tunnel, proxy, port-forward,
+  remote-server, or multi-user path. `ALLOW_REMOTE_ACCESS` is for troubleshooting only and adds no
+  authentication.
 - **.NET 10**, C# 13 idioms, async throughout.
 - **Dependency pins** — `OpenAI 2.10.0` + `Microsoft.Extensions.AI.OpenAI 10.6.0` (Foundry bridge).
 
@@ -69,7 +75,10 @@ decisions interconnect over time. The template is **scenario-neutral**; a concre
 
 ## Out of scope (by design)
 
-- No container/hosted-agent deployment (local run only).
+- No container, hosted-agent, App Service, tunnel, reverse-proxy, port-forward, remote-server, or
+  multi-user deployment. The browser UI has no sign-in because the application is loopback-only.
+- No application identity. The local process uses the signed-in developer's Microsoft Entra user
+  identity through `DefaultAzureCredential`.
 - No automated test suite (the framework is validated by build + manual runs).
 - Framework vocabulary (Dossier / Deliberation / Assessment / Nexus / Council) is fixed in code; use
   your own words in prompts and sample documents.
