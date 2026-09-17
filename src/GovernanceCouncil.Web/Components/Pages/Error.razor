@@ -1,32 +1,34 @@
 ﻿@page "/Error"
 @using System.Diagnostics
 
-<PageTitle>Error</PageTitle>
+<PageTitle>Error — @Brand.AppName</PageTitle>
 
-<header class="gc-page-head">
-    <span class="gc-eyebrow" style="color:var(--gc-danger);">Error</span>
-    <h1>An error occurred while processing your request</h1>
-</header>
+<section class="gc-recovery" aria-labelledby="error-title">
+    <header class="gc-page-header">
+        <div>
+            <h1 id="error-title" class="gc-page-title">The request could not be completed</h1>
+            <p class="gc-page-description">The app encountered an unexpected error. Return to the dashboard and try the action again.</p>
+        </div>
+    </header>
 
-<div class="gc-card" style="padding:1.25rem 1.5rem;">
-@if (ShowRequestId)
-{
-    <p>
-        <strong>Request ID:</strong> <code>@RequestId</code>
-    </p>
-}
+    <div class="gc-action-group">
+        <a href="/" class="btn btn-primary">Return to dashboard</a>
+        <a href="/dossiers" class="btn btn-outline-secondary">Browse dossiers</a>
+    </div>
 
-<h3>Development Mode</h3>
-<p>
-    Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.
-</p>
-<p>
-    <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
-    It can result in displaying sensitive information from exceptions to end users.
-    For local debugging, enable the <strong>Development</strong> environment by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>
-    and restarting the app.
-</p>
-</div>
+    <div class="gc-recovery-details">
+        <h2>If the error continues</h2>
+        <p>Check the local app logs for more information.</p>
+        @if (ShowRequestId)
+        {
+            <p>Use this request ID to find the related log entry.</p>
+            <dl>
+                <dt>Request ID</dt>
+                <dd><code>@RequestId</code></dd>
+            </dl>
+        }
+    </div>
+</section>
 
 @code{
     [CascadingParameter]

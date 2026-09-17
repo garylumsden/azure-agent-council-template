@@ -8,59 +8,90 @@
 
 <PageTitle>Dossier — @(_dossier?.Title ?? DossierId)</PageTitle>
 
-@if (_dossier is null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/dossiers">Dossiers</a></li>
-            <li class="breadcrumb-item active">@_dossier.Title</li>
-        </ol>
+<div class="dossier-detail">
+    <nav class="detail-back" aria-label="Dossier navigation">
+        <a href="/dossiers">← Dossier library</a>
     </nav>
 
-    <h1 class="mt-2">@_dossier.Title</h1>
-
-    <div class="mb-3">
-        <span class="badge bg-secondary">@_dossier.Source</span>
-        <span class="text-muted ms-2">@_dossier.DossierId</span>
-        <span class="text-muted ms-2">Uploaded @_dossier.UploadedDate.ToString("dd MMM yyyy HH:mm")</span>
-        @if (!string.IsNullOrEmpty(_dossier.SourceUrl))
-        {
-            <a href="@_dossier.SourceUrl" target="_blank" class="ms-2">Original source ↗</a>
-        }
-    </div>
-
-    <ul class="nav nav-tabs mb-3" role="tablist">
-        <li class="nav-item">
-            <button class="nav-link @(_activeTab == "rendered" ? "active" : "")" @onclick='() => _activeTab = "rendered"'>
-                Rendered
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link @(_activeTab == "source" ? "active" : "")" @onclick='() => _activeTab = "source"'>
-                Markdown Source
-            </button>
-        </li>
-    </ul>
-
-    @if (_markdownContent is null)
+    @if (_loading)
     {
-        <p>Loading content...</p>
+        <header class="gc-page-header">
+            <h1 class="gc-page-title">Dossier</h1>
+        </header>
+        <div class="gc-empty-state" role="status" aria-live="polite">Loading dossier…</div>
     }
-    else if (_activeTab == "rendered")
+    else if (_dossier is null)
     {
-        <div class="border rounded p-4 bg-white">
-            @((MarkupString)Markdown.ToHtml(_markdownContent, _markdownPipeline))
+        <header class="gc-page-header">
+            <h1 class="gc-page-title">Dossier not found</h1>
+        </header>
+        <div class="gc-empty-state gc-surface" role="status">
+            <p>Dossier <strong>@DossierId</strong> is not in the library. It may have been deleted.</p>
+            <FluentAnchor Href="/dossiers" Appearance="Appearance.Accent">Choose another dossier</FluentAnchor>
         </div>
     }
     else
     {
-        <pre class="border rounded p-4 bg-light"><code>@_markdownContent</code></pre>
+        <header class="gc-page-header">
+            <div class="detail-heading">
+                <h1 class="gc-page-title">@_dossier.Title</h1>
+                <p class="gc-page-description">Review the document and its Markdown source.</p>
+            </div>
+            @if (!string.IsNullOrEmpty(_dossier.SourceUrl))
+            {
+                <div class="gc-action-group">
+                    <FluentAnchor Href="@_dossier.SourceUrl" Target="_blank" rel="noopener noreferrer" Appearance="Appearance.Neutral">Original source ↗</FluentAnchor>
+                </div>
+            }
+        </header>
+
+        <dl class="gc-toolbar detail-metadata">
+            <div>
+                <dt>Dossier ID</dt>
+                <dd>@_dossier.DossierId</dd>
+            </div>
+            <div>
+                <dt>Source</dt>
+                <dd><span class="gc-pill badge-abstain">@_dossier.Source</span></dd>
+            </div>
+            <div>
+                <dt>Uploaded</dt>
+                <dd><time datetime="@_dossier.UploadedDate.ToString("O")">@_dossier.UploadedDate.ToString("dd MMM yyyy HH:mm")</time></dd>
+            </div>
+        </dl>
+
+        @if (_contentUnavailable)
+        {
+            <div class="alert alert-warning" role="alert">
+                <strong>Dossier content could not be loaded.</strong>
+                <p class="mb-0">Reload this page to try again, or return to the <a href="/dossiers">dossier library</a> to upload a replacement.</p>
+            </div>
+        }
+        else if (string.IsNullOrWhiteSpace(_markdownContent))
+        {
+            <div class="gc-empty-state gc-surface">
+                <h2>No document content</h2>
+                <p>This dossier has no Markdown content. Return to the library to choose another dossier or upload a replacement.</p>
+                <FluentAnchor Href="/dossiers" Appearance="Appearance.Neutral">Open dossier library</FluentAnchor>
+            </div>
+        }
+        else
+        {
+            <section class="gc-surface detail-document" aria-label="Dossier content">
+                <FluentTabs @bind-ActiveTabId="_activeTab">
+                    <FluentTab Id="rendered" Label="Document">
+                        <article class="prose detail-prose" aria-label="Rendered dossier">
+                            @((MarkupString)Markdown.ToHtml(_markdownContent, _markdownPipeline))
+                        </article>
+                    </FluentTab>
+                    <FluentTab Id="source" Label="Markdown source">
+                        <pre class="detail-source" tabindex="0" aria-label="Dossier Markdown source"><code>@_markdownContent</code></pre>
+                    </FluentTab>
+                </FluentTabs>
+            </section>
+        }
     }
-}
+</div>
 
 @code {
     [Parameter] public string DossierId { get; set; } = "";
@@ -68,14 +99,22 @@ else
     private Dossier? _dossier;
     private string? _markdownContent;
     private string _activeTab = "rendered";
+    private bool _loading = true;
+    private bool _contentUnavailable;
 
     private static readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .DisableHtml()
         .Build();
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
+        _loading = true;
+        _dossier = null;
+        _markdownContent = null;
+        _contentUnavailable = false;
+        _activeTab = "rendered";
+
         _dossier = await DossierStore.GetAsync(DossierId);
         if (_dossier is not null)
         {
@@ -85,8 +124,10 @@ else
             }
             catch
             {
-                _markdownContent = "*Markdown content not available.*";
+                _contentUnavailable = true;
             }
         }
+
+        _loading = false;
     }
 }

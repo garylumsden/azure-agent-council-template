@@ -1,0 +1,19 @@
+.assessment-list-page { min-width: 0; }
+.assessment-notice { padding: 1rem; margin-bottom: 1.25rem; }
+.assessment-list { list-style: none; padding: 0; margin: 0; }
+.assessment-row { border-bottom: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(10rem, 14rem) auto; align-items: center; gap: 1.25rem; padding: 1.25rem; }
+.assessment-row + .assessment-row { border-top: 1px solid var(--gc-border); }
+.assessment-record, .assessment-recommendation { min-width: 0; }
+.assessment-record h3 { font-size: 1rem; line-height: 1.5; margin: 0 0 .4rem; overflow-wrap: anywhere; }
+.assessment-record-meta { display: flex; flex-wrap: wrap; gap: .25rem 1rem; overflow-wrap: anywhere; }
+.assessment-recommendation { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; }
+.assessment-recommendation .gc-pill { white-space: normal; }
+.assessment-actions { flex-wrap: wrap; }
+@media (max-width: 1000px) {
+    .assessment-row { grid-template-columns: minmax(0, 1fr) auto; }
+    .assessment-record { grid-column: 1 / -1; }
+}
+@media (max-width: 540px) {
+    .assessment-row { grid-template-columns: minmax(0, 1fr); padding: 1rem; gap: .85rem; }
+    .assessment-actions { justify-content: flex-start; }
+}

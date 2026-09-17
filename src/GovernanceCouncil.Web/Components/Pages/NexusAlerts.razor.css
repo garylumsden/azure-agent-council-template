@@ -1,0 +1,14 @@
+.nexus-alerts-page { min-width: 0; }
+.nexus-alert-list { list-style: none; padding: 0; margin: 0; }
+.nexus-alert-row { border-bottom: 0; display: block; padding: 1.25rem; }
+.nexus-alert-row + .nexus-alert-row { border-top: 1px solid var(--gc-border); }
+.nexus-alert-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .4rem 1rem; margin-bottom: .6rem; }
+.nexus-alert-heading h3 { font-size: 1rem; margin: 0; }
+.nexus-summary { max-width: 75ch; line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; margin: 0 0 1rem; }
+.nexus-alert-meta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(6rem, .4fr); gap: .75rem 1.5rem; margin: 0 0 1rem; }
+.nexus-alert-meta dt { color: var(--gc-text-muted); font-size: .8rem; font-weight: 400; margin-bottom: .2rem; }
+.nexus-alert-meta dd { font-size: .9rem; margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+    .nexus-alert-row { padding: 1rem; }
+    .nexus-alert-meta { grid-template-columns: minmax(0, 1fr); }
+}

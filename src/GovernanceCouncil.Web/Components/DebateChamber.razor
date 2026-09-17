@@ -1,220 +1,403 @@
 @using GovernanceCouncil.Core.Models
-@using Markdig
+@using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop
+@implements IAsyncDisposable
 @inject IJSRuntime JS
+@inject ILogger<DebateChamber> Logger
 
-@* Parliament-style debating chamber. Pure presentation: all state is supplied by the
-   parent (LiveDeliberation.razor), which owns the SignalR connection. *@
-
-<div class="debate-stage">
-    <div class="debate-phasebar">
-        <span class="debate-onair" aria-label="Live debate in progress">
-            <span class="dot" aria-hidden="true"></span> On Air
-        </span>
-        <span class="debate-phase-pill" role="status" aria-live="polite">
-            @(string.IsNullOrWhiteSpace(Phase) ? "Convening" : Phase)
-        </span>
-        @if (MaxRounds > 0)
-        {
-            <span class="debate-round-pill" aria-label="@($"Round {Round} of {MaxRounds}")">
-                Round @Round of @MaxRounds
-            </span>
-        }
-    </div>
-
-    <div class="hemicycle">
-        @{
-            var members = Seats.Where(s => !s.IsChair).ToList();
-            var n = members.Count;
-        }
-        @for (var i = 0; i < n; i++)
-        {
-            var seat = members[i];
-            var (left, top, scale) = ArcPosition(i, n);
-            <div class="seat @(seat.Speaking ? "speaking" : "") @(seat.HandRaised ? "hand-up" : "") @(seat.MicLive ? "mic-live" : "") @(seat.Assessing ? "assessing" : "")"
-                 style="left:@(left.ToString(Ci))%; top:@(top.ToString(Ci))%; --seat-scale:@(scale.ToString(Ci));">
-                <span class="hand" aria-hidden="@( !seat.HandRaised )"
-                      aria-label="@(seat.HandRaised ? $"{seat.DisplayName} has raised a hand to speak: {seat.HandReason}" : null)">✋</span>
-                @if (seat.HandRaised && !string.IsNullOrWhiteSpace(seat.HandReason))
-                {
-                    <span class="hand-popover" role="tooltip">@seat.HandReason</span>
-                }
-                <div class="avatar" style="background:@seat.Colour;" aria-hidden="true">@AvatarInner(seat.Avatar, seat.Initials)</div>
-                <div class="plaque">
-                    <span class="name">@seat.DisplayName</span>
-                    <span class="role">@seat.Role</span>
-                </div>
-                <span class="mic"
-                      aria-label="@(seat.MicLive ? $"{seat.DisplayName} push-to-talk microphone is live" : $"{seat.DisplayName} microphone is off")">
-                    @(seat.MicLive ? "🎙️" : "🎤")
-                </span>
-            </div>
-        }
-
-        @{
-            var chair = Seats.FirstOrDefault(s => s.IsChair);
-        }
-        @if (chair is not null)
-        {
-            <div class="podium @(chair.Speaking ? "speaking" : "") @(chair.MicLive ? "mic-live" : "")">
-                <div class="seat @(chair.Speaking ? "speaking" : "") @(chair.MicLive ? "mic-live" : "")"
-                     style="position:static; transform:none; width:auto;">
-                    <div class="avatar" style="background:@chair.Colour;" aria-hidden="true">@AvatarInner(chair.Avatar, chair.Initials)</div>
-                    <div class="plaque">
-                        <span class="name">@chair.DisplayName</span>
-                        <span class="role">@chair.Role</span>
-                    </div>
-                    <span class="mic"
-                          aria-label="@(chair.MicLive ? "Chair push-to-talk microphone is live" : "Chair microphone is off")">
-                        @(chair.MicLive ? "🎙️" : "🎤")
-                    </span>
-                </div>
-                <div class="podium-base" aria-hidden="true"></div>
-            </div>
-        }
-    </div>
-
-    @{
-        var memberSeats = Seats.Where(s => !s.IsChair).ToList();
-        var anySettled = memberSeats.Any(s => !string.IsNullOrWhiteSpace(s.PositionSummary));
-    }
-    @if (AssessmentMode || anySettled)
-    {
-        <div class="assessment-rollcall" role="region" aria-label="Independent assessment — initial positions">
-            @foreach (var seat in Seats.Where(s => !s.IsChair))
+@* Presentation only. The parent owns the session, configuration and received events. *@
+<div @ref="_root" class="gc-debate @(_focusStage ? "gc-debate-focus" : "gc-debate-desk") @(_showTimeline ? "gc-debate-show-timeline" : "")"
+     aria-label="Debate workspace">
+    <div class="gc-debate-toolbar">
+        <div class="gc-debate-layouts" role="group" aria-label="Debate layout">
+            <button type="button" aria-pressed="@(!_focusStage)" @onclick="() => _focusStage = false">Live desk</button>
+            <button type="button" aria-pressed="@_focusStage" @onclick="() => _focusStage = true">Focus stage</button>
+        </div>
+        <div class="gc-debate-session-state" role="status">
+            @if (!string.IsNullOrWhiteSpace(Phase))
             {
-                var done = !string.IsNullOrWhiteSpace(seat.PositionSummary);
-                var blocked = !done && seat.Blocked;
-                var failed = !done && !blocked && AssessmentConfirmed;
-                <div class="rc-card @(done ? "done" : blocked ? "blocked" : failed ? "failed" : seat.Assessing ? "assessing" : "")">
-                    <div class="rc-head">
-                        <span class="avatar" style="width:26px;height:26px;font-size:0.72rem;background:@seat.Colour;border-width:1px;" aria-hidden="true">@AvatarInner(seat.Avatar, seat.Initials)</span>
-                        <span class="rc-name">@seat.DisplayName</span>
-                        @if (done)
-                        {
-                            <span class="rc-tick" aria-label="position tabled">✓</span>
-                        }
-                        else if (blocked)
-                        {
-                            <span class="rc-warn" aria-label="blocked by content safety" title="Blocked by the content-safety policy">🛡️</span>
-                        }
-                        else if (failed)
-                        {
-                            <span class="rc-warn" aria-label="no position recorded">⚠️</span>
-                        }
-                        else if (seat.Assessing)
-                        {
-                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                        }
-                    </div>
-                    <div class="rc-body">
-                        @if (done)
-                        {
-                            @ModelText.StripSourceAnnotations(seat.PositionSummary)
-                        }
-                        else if (blocked)
-                        {
-                            <em class="rc-preview">Blocked by the content-safety policy</em>
-                        }
-                        else if (failed)
-                        {
-                            <em class="rc-preview">No position recorded</em>
-                        }
-                        else
-                        {
-                            <em class="rc-preview">forming initial position…</em>
-                        }
-                    </div>
-                </div>
+                <span>@Phase</span>
+            }
+            @if (Completed)
+            {
+                <strong>Complete</strong>
+            }
+            @if (MaxRounds > 0)
+            {
+                <span>Round @Round of @MaxRounds</span>
+            }
+            else if (Round > 0)
+            {
+                <span>Round @Round</span>
+            }
+        </div>
+        <div class="gc-debate-tools">
+            @if (DossierMarkdown is not null)
+            {
+                <button type="button" id="@DossierButtonId" aria-controls="@InspectorId"
+                        aria-expanded="@(_inspector == InspectorKind.Dossier)" @onclick="OpenDossier">Dossier</button>
+            }
+            @if (Completed && !string.IsNullOrWhiteSpace(AssessmentHref))
+            {
+                <a class="gc-debate-assessment" href="@AssessmentHref">View Assessment <span aria-hidden="true">↗</span></a>
+            }
+        </div>
+    </div>
+
+    <section class="gc-debate-moderator" aria-label="Current moderator announcement">
+        <div class="gc-debate-moderator-label">
+            <strong>@ModeratorLabel</strong>
+            @if (ModeratorCalling)
+            {
+                <span class="gc-debate-live">Calling for hands</span>
+            }
+        </div>
+        <div class="gc-debate-announcement" tabindex="0" role="status" aria-live="polite" aria-atomic="true">
+            @(string.IsNullOrWhiteSpace(ModeratorAnnouncement) ? "No moderator announcement received in this view." : ModeratorAnnouncement)
+        </div>
+        <span class="gc-debate-sr-only" role="status" aria-live="polite">@LatestEventLabel</span>
+        <button type="button" class="gc-debate-mobile-timeline" aria-controls="@TimelineId" aria-expanded="@_showTimeline"
+                aria-label="@TimelineToggleLabel" @onclick="ToggleTimeline">
+            @(_showTimeline ? "Back to response" : $"Timeline ({ModeratorEvents.Count})")
+        </button>
+    </section>
+
+    @if (ConnectionInterrupted || !string.IsNullOrWhiteSpace(Error) || !string.IsNullOrWhiteSpace(ConclusionReason) || _interopUnavailable)
+    {
+        <div class="gc-debate-notices" tabindex="0" aria-label="Debate notices">
+            @if (ConnectionInterrupted)
+            {
+                <p class="gc-debate-warning" role="status">Connection interrupted. This view may be behind; received responses remain available below.</p>
+            }
+            @if (!string.IsNullOrWhiteSpace(Error))
+            {
+                <p class="gc-debate-danger" role="alert"><strong>Deliberation failed.</strong> @Error <a href="/dossiers">Back to dossiers</a></p>
+            }
+            @if (!string.IsNullOrWhiteSpace(ConclusionReason))
+            {
+                <p role="status"><strong>Debate concluded.</strong> @ConclusionReason</p>
+            }
+            @if (_interopUnavailable)
+            {
+                <p role="status">Automatic scrolling is unavailable. Use the response and timeline scrollbars to read the received content.</p>
             }
         </div>
     }
 
-    @if (Transcript is { Count: > 0 })
-    {
-        <div class="transcript" id="gc-transcript" role="log" aria-live="polite" aria-label="Debate transcript">
-            @foreach (var turn in Transcript)
-            {
-                <div class="turn @(turn.Speaking ? "speaking" : "")">
-                    <div class="turn-head">
-                        <span class="avatar" style="width:26px;height:26px;font-size:0.72rem;background:@turn.Colour;border-width:1px;" aria-hidden="true">@AvatarInner(turn.Avatar, turn.Initials)</span>
-                        <span class="turn-name">@turn.DisplayName</span>
-                        <span class="turn-role text-muted">· @turn.Role</span>
+    <div class="gc-debate-workspace">
+        <aside class="gc-debate-council" aria-label="Council members and initial positions">
+            <div class="gc-debate-panel-heading">
+                <h2>Council <span class="gc-debate-count">@Seats.Count</span></h2>
+                <span class="gc-debate-muted">Initial positions &amp; details</span>
+            </div>
+            <div class="gc-debate-roster" tabindex="0" aria-label="Council roster">
+                @foreach (var seat in Seats)
+                {
+                    <button @key="seat.Key" type="button" id="@MemberButtonId(seat.Key)"
+                            class="gc-debate-member @(seat.Speaking || seat.MicLive ? "gc-debate-on-floor" : "")"
+                            aria-label="@($"Inspect {seat.DisplayName}: {SeatStatus(seat)}. Initial position and details")"
+                            aria-controls="@InspectorId" aria-expanded="@(_inspector == InspectorKind.Member && _memberKey == seat.Key)"
+                            @onclick="() => OpenMember(seat.Key, MemberButtonId(seat.Key))">
+                        <span class="gc-debate-avatar" style="background-color:@seat.Colour" aria-hidden="true">@AvatarInner(seat.Avatar, seat.Initials)</span>
+                        <span class="gc-debate-member-copy">
+                            <strong>@seat.DisplayName</strong>
+                            <span>@seat.Role</span>
+                            <span class="gc-debate-member-state @(seat.HandRaised || seat.Speaking || seat.MicLive ? "gc-debate-live" : "")">@SeatStatus(seat)</span>
+                        </span>
+                    </button>
+                }
+                @if (Seats.Count == 0)
+                {
+                    <p class="gc-debate-empty-note">No council members received.</p>
+                }
+            </div>
+        </aside>
+
+        <section class="gc-debate-center" aria-label="Reading workspace">
+            <div class="gc-debate-response-panel" hidden="@(_inspector != InspectorKind.None)">
+                <nav class="gc-debate-response-nav" aria-label="Read responses">
+                    <button type="button" aria-label="Previous response" disabled="@(SelectedIndex <= 0)" @onclick="() => MoveResponse(-1)"><span aria-hidden="true">←</span> Previous</button>
+                    <div class="gc-debate-selector">
+                        <label for="@ResponseSelectId">Response <span>@(SelectedIndex + 1) / @Transcript.Count</span></label>
+                        <select id="@ResponseSelectId" value="@(_selectedTurnId?.ToString() ?? "")" @onchange="SelectResponse" disabled="@(Transcript.Count == 0)">
+                            @if (Transcript.Count == 0)
+                            {
+                                <option value="">No responses yet</option>
+                            }
+                            @for (var index = 0; index < Transcript.Count; index++)
+                            {
+                                var item = Transcript[index];
+                                <option @key="item.Id" value="@item.Id">@(index + 1). @item.DisplayName · @TurnKind(item)</option>
+                            }
+                        </select>
                     </div>
-                    <div class="turn-body">
-                        @if (turn.IsSynthesis)
+                    <button type="button" aria-label="Next response" disabled="@(SelectedIndex < 0 || SelectedIndex >= Transcript.Count - 1)" @onclick="() => MoveResponse(1)">Next <span aria-hidden="true">→</span></button>
+                </nav>
+                <div class="gc-debate-reading-state">
+                    <span role="status" aria-live="polite">@ReadingStatus</span>
+                    <button type="button" class="gc-debate-return" disabled="@(Transcript.Count == 0)" @onclick="ReturnToLive">
+                        @(_followingLive ? "Latest response ↓" : "Return to live")
+                        @if (_newResponseIds.Count > 0)
                         {
-                            @if (turn.Blocked)
-                            {
-                                <span class="text-danger">🛡️ The Chair's synthesis was blocked by the content-safety policy.</span>
-                                @if (Completed && !string.IsNullOrEmpty(AssessmentHref))
-                                {
-                                    <a href="@AssessmentHref" class="btn btn-sm btn-outline-secondary ms-2">View details →</a>
-                                }
-                            }
-                            else if (Completed && !string.IsNullOrEmpty(AssessmentHref))
-                            {
-                                <span class="chair-done">✅ The Chair has delivered the Assessment.</span>
-                                <a href="@AssessmentHref" class="btn btn-sm btn-success ms-2">View Assessment →</a>
-                            }
-                            else
-                            {
-                                <em class="text-muted">⚖️ The Chair is finalising the Assessment…</em>
-                            }
+                            <span class="gc-debate-new-count">@_newResponseIds.Count new</span>
                         }
-                        else if (turn.IsNexus)
+                    </button>
+                </div>
+                <div id="@ResponseScrollId" class="gc-debate-response-scroll" data-debate-response-scroll tabindex="0" aria-label="Selected response content">
+                    <div data-debate-response-content>
+                        @if (SelectedTurn is { } turn)
                         {
-                            @if (turn.NexusCount is null)
-                            {
-                                <em class="text-muted">🔗 @turn.DisplayName is connecting this assessment to prior decisions…</em>
-                            }
-                            else if (turn.NexusCount == 0)
-                            {
-                                <span class="chair-done">🔗 @turn.DisplayName found no connections to prior decisions.</span>
-                            }
-                            else
-                            {
-                                <span class="chair-done">🔗 @turn.DisplayName found @turn.NexusCount connection@(turn.NexusCount == 1 ? "" : "s") to prior decisions.</span>
-                            }
-                        }
-                        else if (turn.Blocked)
-                        {
-                            <span class="text-danger">🛡️ This contribution was blocked by the content-safety policy.</span>
-                        }
-                        else if (string.IsNullOrWhiteSpace(turn.Text))
-                        {
-                            <em class="text-muted">@(turn.IsAssessment ? "forming initial position…" : "Taking the floor…")</em>
+                            <article @key="turn.Id" class="gc-debate-response" aria-label="@($"Response from {turn.DisplayName}")">
+                                <header class="gc-debate-speaker">
+                                    <span class="gc-debate-avatar" style="background-color:@turn.Colour" aria-hidden="true">@AvatarInner(turn.Avatar, turn.Initials)</span>
+                                    <div>
+                                        <h2>@turn.DisplayName</h2>
+                                        <p>@turn.Role</p>
+                                        <span class="@(turn.Speaking ? "gc-debate-live" : "gc-debate-muted")">@TurnStatus(turn)</span>
+                                    </div>
+                                </header>
+                                <div class="gc-debate-response-text">
+                                    @if (turn.IsSynthesis)
+                                    {
+                                        @if (turn.Blocked)
+                                        {
+                                            <p class="gc-debate-warning">The Chair's synthesis was blocked by the content-safety policy.</p>
+                                        }
+                                        else if (Completed)
+                                        {
+                                            <h3>The Chair has delivered the Assessment.</h3>
+                                            @if (string.IsNullOrWhiteSpace(AssessmentHref))
+                                            {
+                                                <p class="gc-debate-muted">No Assessment link has been received in this view.</p>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <p>The Chair is finalising the Assessment…</p>
+                                        }
+                                        @if (Completed && !string.IsNullOrWhiteSpace(AssessmentHref))
+                                        {
+                                            <a class="gc-debate-assessment" href="@AssessmentHref">@(turn.Blocked ? "View Assessment details" : "View Assessment") <span aria-hidden="true">↗</span></a>
+                                        }
+                                    }
+                                    else if (turn.IsNexus)
+                                    {
+                                        @if (turn.Blocked)
+                                        {
+                                            <p class="gc-debate-warning">This contribution was blocked by the content-safety policy.</p>
+                                        }
+                                        else if (turn.NexusCount is null)
+                                        {
+                                            <p>@turn.DisplayName is connecting this assessment to prior decisions…</p>
+                                        }
+                                        else if (turn.NexusCount == 0)
+                                        {
+                                            <p>@turn.DisplayName found no connections to prior decisions.</p>
+                                        }
+                                        else
+                                        {
+                                            <p>@turn.DisplayName found @turn.NexusCount connection@(turn.NexusCount == 1 ? "" : "s") to prior decisions.</p>
+                                        }
+                                    }
+                                    else if (turn.Blocked)
+                                    {
+                                        <p class="gc-debate-warning">This contribution was blocked by the content-safety policy. Its text is not displayed.</p>
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(turn.Text))
+                                    {
+                                        <DebateMarkdown Text="@turn.Text" />
+                                    }
+                                    else
+                                    {
+                                        <p class="gc-debate-muted">@(turn.Speaking ? (turn.IsAssessment ? "Forming an initial position…" : "Taking the floor…") : "No response text recorded.")</p>
+                                    }
+                                    @if (turn.Speaking && !turn.Blocked && !turn.IsSynthesis && !turn.IsNexus)
+                                    {
+                                        <p class="gc-debate-streaming"><span aria-hidden="true">●</span> Response in progress</p>
+                                    }
+                                    @if (turn.Citations is { Count: > 0 })
+                                    {
+                                        <footer class="gc-debate-citations" aria-label="Response citations">
+                                            <h3>Sources</h3>
+                                            <ul>
+                                                @foreach (var citation in turn.Citations)
+                                                {
+                                                    <li>
+                                                        @if (IsSafeCitation(citation.Url))
+                                                        {
+                                                            <a href="@citation.Url" target="_blank" rel="noopener">@citation.Title <span class="gc-debate-sr-only">(opens in a new tab)</span><span aria-hidden="true">↗</span></a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span>@citation.Title</span>
+                                                        }
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </footer>
+                                    }
+                                </div>
+                            </article>
                         }
                         else
                         {
-                            @((MarkupString)Markdown.ToHtml(ModelText.StripSourceAnnotations(turn.Text), _mdPipeline))
-                        }
-                        @if (turn.Speaking && !turn.IsSynthesis && !turn.IsNexus && !turn.Blocked)
-                        {
-                            <span class="caret" aria-hidden="true"></span>
+                            <div class="gc-debate-empty">
+                                <h2>@(Completed ? "Deliberation complete" : AssessmentMode ? "Initial positions" : "No responses yet")</h2>
+                                @if (Completed)
+                                {
+                                    <p>No responses were recorded in this view. The Assessment, when available, can be opened above.</p>
+                                }
+                                else if (AssessmentMode)
+                                {
+                                    <p>Select a council member to read their initial position and full details as they arrive.</p>
+                                    <p>@Seats.Count(s => !s.IsChair && HasPosition(s)) of @Seats.Count(s => !s.IsChair) initial positions recorded.</p>
+                                }
+                                else
+                                {
+                                    <p>Received responses will appear here. You can inspect council members, follow moderator events, or read the dossier while you wait.</p>
+                                }
+                            </div>
                         }
                     </div>
+                </div>
+            </div>
 
-                    @if (turn.Citations is { Count: > 0 })
+            <section id="@InspectorId" class="gc-debate-inspector" hidden="@(_inspector == InspectorKind.None)"
+                     aria-labelledby="@InspectorTitleId" @onkeydown="OnInspectorKeyDown">
+                <header class="gc-debate-inspector-heading">
+                    <h2 id="@InspectorTitleId" tabindex="-1">@InspectorTitle</h2>
+                    <button type="button" aria-label="Close inspector and return to response" @onclick="CloseInspector">Close <span aria-hidden="true">×</span></button>
+                </header>
+                @if (_inspector == InspectorKind.Dossier)
+                {
+                    <div class="gc-debate-dossier-format" role="group" aria-label="Dossier format">
+                        <button type="button" aria-pressed="@(!_showDossierSource)" @onclick="() => _showDossierSource = false">Rendered</button>
+                        <button type="button" aria-pressed="@_showDossierSource" @onclick="() => _showDossierSource = true">Markdown source</button>
+                    </div>
+                }
+                <div class="gc-debate-inspector-scroll" tabindex="0" aria-label="Inspector content" @key="InspectorContentKey">
+                    @if (_inspector == InspectorKind.Dossier)
                     {
-                        <div class="citations" aria-label="Citations">
-                            @foreach (var c in turn.Citations)
-                            {
-                                <a class="citation-chip" href="@c.Url" target="_blank" rel="noopener" title="@c.Title">🔗 @c.Title</a>
-                            }
-                        </div>
+                        @if (string.IsNullOrWhiteSpace(DossierMarkdown))
+                        {
+                            <p class="gc-debate-muted">No dossier text was provided.</p>
+                        }
+                        else if (_showDossierSource)
+                        {
+                            <pre class="gc-debate-source"><code>@DossierMarkdown</code></pre>
+                        }
+                        else
+                        {
+                            <DebateMarkdown Text="@DossierMarkdown" />
+                        }
+                    }
+                    else if (InspectedMember is { } member)
+                    {
+                        <p class="gc-debate-muted">@member.Role</p>
+                        <p class="gc-debate-inspector-status">@SeatStatus(member)</p>
+                        @if (member.HandRaised)
+                        {
+                            <h3>Raised-hand reason</h3>
+                            <p class="gc-debate-plain-text">@(string.IsNullOrWhiteSpace(member.HandReason) ? "No reason was received with this hand." : ModelText.StripSourceAnnotations(member.HandReason))</p>
+                        }
+                        @if (member.Blocked)
+                        {
+                            <p class="gc-debate-warning">A contribution from this member was blocked by the content-safety policy.</p>
+                        }
+                        <h3>@(member.IsChair ? "Council role" : "Initial position")</h3>
+                        @if (!string.IsNullOrWhiteSpace(member.PositionSummary))
+                        {
+                            <p>@ModelText.StripSourceAnnotations(member.PositionSummary)</p>
+                        }
+                        else if (!HasPosition(member))
+                        {
+                            <p class="gc-debate-muted">@PositionStatus(member)</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(member.Detail))
+                        {
+                            <h3>Full details</h3>
+                            <DebateMarkdown Text="@member.Detail" />
+                        }
+                    }
+                    else if (_inspector == InspectorKind.Member)
+                    {
+                        <p class="gc-debate-muted">This member is no longer in the received roster.</p>
                     }
                 </div>
+            </section>
+        </section>
+
+        <aside id="@TimelineId" class="gc-debate-timeline" aria-label="Moderator event timeline">
+            <header class="gc-debate-timeline-heading">
+                <div class="gc-debate-panel-heading"><h2>Moderator timeline</h2><span class="gc-debate-count">@ModeratorEvents.Count</span></div>
+                <p>Events received in this view</p>
+                <button type="button" disabled="@(ModeratorEvents.Count == 0)" @onclick="ShowLatestEvent">Latest event <span aria-hidden="true">↓</span></button>
+            </header>
+            <div class="gc-debate-timeline-scroll" data-debate-timeline-scroll tabindex="0" aria-label="Events in received order; timestamps are local">
+                <div data-debate-timeline-content>
+                    @if (_orderedEvents.Count == 0)
+                    {
+                        <p class="gc-debate-empty-note">No moderator events received in this view.</p>
+                    }
+                    else
+                    {
+                        <ol class="gc-debate-events">
+                            @foreach (var entry in _orderedEvents)
+                            {
+                                <li @key="entry.Sequence" class="gc-debate-event @EventClass(entry.Kind)">
+                                    <h3>@entry.Title</h3>
+                                    <div class="gc-debate-event-meta">
+                                        <span class="gc-debate-event-kind">@EventKindLabel(entry.Kind)</span>
+                                        <time datetime="@entry.ReceivedAt.ToString("O")" data-debate-local-time>@entry.ReceivedAt.UtcDateTime.ToString("HH:mm:ss 'UTC'")</time>
+                                        <span>@(entry.Round > 0 ? $"Round {entry.Round}" : "Before round 1")</span>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(entry.Detail))
+                                    {
+                                        @if (entry.Detail.Length <= 180)
+                                        {
+                                            <p class="gc-debate-plain-text">@ModelText.StripSourceAnnotations(entry.Detail)</p>
+                                        }
+                                        else
+                                        {
+                                            <p>@Preview(ModelText.StripSourceAnnotations(entry.Detail), 140)</p>
+                                            <details>
+                                                <summary>@(entry.Kind is ModeratorEventKind.HandRaised or ModeratorEventKind.SpeakerSelected ? "Read full reason" : "Read full details")</summary>
+                                                <p class="gc-debate-plain-text">@ModelText.StripSourceAnnotations(entry.Detail)</p>
+                                            </details>
+                                        }
+                                    }
+                                </li>
+                            }
+                        </ol>
+                    }
+                </div>
+            </div>
+            <p class="gc-debate-timeline-note">Local timestamps. Reloading starts a new view; events missed while disconnected may be absent. This is not a complete audit history.</p>
+        </aside>
+    </div>
+
+    <section class="gc-debate-hands" aria-label="Live raised hands">
+        <div class="gc-debate-hands-heading">
+            <h2>Raised hands <span class="gc-debate-count" role="status">@Seats.Count(s => s.HandRaised)</span></h2>
+            <span>Select a hand to read its full reason.</span>
+        </div>
+        <div class="gc-debate-hand-list" tabindex="0" aria-label="Raised hands and reasons">
+            @foreach (var seat in Seats.Where(s => s.HandRaised))
+            {
+                <button @key="seat.Key" type="button" id="@HandButtonId(seat.Key)" class="gc-debate-hand"
+                        aria-label="@($"Read raised-hand reason from {seat.DisplayName}")" aria-controls="@InspectorId"
+                        @onclick="() => OpenMember(seat.Key, HandButtonId(seat.Key))">
+                    <strong><span aria-hidden="true">↑</span> @seat.DisplayName</strong>
+                    <span class="gc-debate-hand-reason">@(string.IsNullOrWhiteSpace(seat.HandReason) ? "No reason received." : ModelText.StripSourceAnnotations(seat.HandReason))</span>
+                    <span class="gc-debate-hand-action">Read reason <span aria-hidden="true">↗</span></span>
+                </button>
+            }
+            @if (!Seats.Any(s => s.HandRaised))
+            {
+                <p class="gc-debate-no-hands">No hands raised.</p>
             }
         </div>
-    }
-
-    @if (!string.IsNullOrWhiteSpace(ConclusionReason))
-    {
-        <div class="conclusion-banner" role="status">
-            🏛️ Debate concluded — @ConclusionReason
-        </div>
-    }
+    </section>
 </div>
 
 @code {
@@ -228,14 +411,203 @@
     [Parameter] public bool AssessmentConfirmed { get; set; }
     [Parameter] public bool Completed { get; set; }
     [Parameter] public string? AssessmentHref { get; set; }
+    [Parameter] public string DeliberationId { get; set; } = string.Empty;
+    [Parameter] public string ModeratorLabel { get; set; } = "Moderator";
+    [Parameter] public string? ModeratorAnnouncement { get; set; }
+    [Parameter] public bool ModeratorCalling { get; set; }
+    [Parameter] public bool ConnectionInterrupted { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public string? DossierMarkdown { get; set; }
+    [Parameter] public string? DossierTitle { get; set; }
+    [Parameter] public IReadOnlyList<ModeratorEventVm> ModeratorEvents { get; set; } = Array.Empty<ModeratorEventVm>();
 
-    private static readonly System.Globalization.CultureInfo Ci = System.Globalization.CultureInfo.InvariantCulture;
+    private enum InspectorKind { None, Member, Dossier }
+    private readonly string _instanceId = $"gc-debate-{Guid.NewGuid():N}";
+    private readonly HashSet<Guid> _knownTurnIds = new();
+    private readonly HashSet<Guid> _newResponseIds = new();
+    private readonly CancellationTokenSource _lifetime = new();
+    private ElementReference _root;
+    private DotNetObjectReference<DebateChamber>? _reference;
+    private IReadOnlyList<ModeratorEventVm> _orderedEvents = Array.Empty<ModeratorEventVm>();
+    private Guid? _selectedTurnId;
+    private string? _sessionId;
+    private string? _memberKey;
+    private string? _inspectorOrigin;
+    private string? _pendingFocusId;
+    private string? _responseScrollAction;
+    private bool _timelineScrollRequested;
+    private bool _focusStage;
+    private bool _showTimeline;
+    private bool _showDossierSource;
+    private bool _followingLive = true;
+    private bool _interopUnavailable;
+    private bool _disposed;
+    private InspectorKind _inspector;
 
-    private static readonly MarkdownPipeline _mdPipeline = new MarkdownPipelineBuilder()
-        .UseAdvancedExtensions().DisableHtml().Build();
+    private string ResponseSelectId => $"{_instanceId}-select";
+    private string ResponseScrollId => $"{_instanceId}-response";
+    private string InspectorId => $"{_instanceId}-inspector";
+    private string InspectorTitleId => $"{_instanceId}-inspector-title";
+    private string DossierButtonId => $"{_instanceId}-dossier";
+    private string TimelineId => $"{_instanceId}-timeline";
+    private string MemberButtonId(string key) => $"{_instanceId}-member-{Uri.EscapeDataString(key)}";
+    private string HandButtonId(string key) => $"{_instanceId}-hand-{Uri.EscapeDataString(key)}";
+    private string InspectorContentKey => $"{_inspector}:{_memberKey}:{_showDossierSource}";
+    private TurnVm? SelectedTurn => Transcript.FirstOrDefault(t => t.Id == _selectedTurnId);
+    private SeatVm? InspectedMember => Seats.FirstOrDefault(s => s.Key == _memberKey);
+    private string InspectorTitle => _inspector == InspectorKind.Dossier ? (string.IsNullOrWhiteSpace(DossierTitle) ? "Dossier" : DossierTitle) : InspectedMember?.DisplayName ?? "Member details";
+    private string LatestEventLabel => _orderedEvents.Count == 0 ? "No moderator events received." : $"Latest event: {Preview(_orderedEvents[^1].Title, 160)}";
+    private string TimelineToggleLabel => $"{(_showTimeline ? "Back to response" : "Open moderator timeline")}. {ModeratorEvents.Count} events. {LatestEventLabel}";
+    private string ReadingStatus => Transcript.Count == 0 ? (Completed ? "No recorded responses" : "Waiting for responses") : _followingLive ? (Completed ? "Latest recorded response" : "Following latest response") : $"Reading response {SelectedIndex + 1} of {Transcript.Count} · {_newResponseIds.Count} new {(_newResponseIds.Count == 1 ? "response" : "responses")}";
 
-    // Renders the persona avatar image inside the coloured circle, falling back to the initials text
-    // if no avatar URL is present (every persona resolves to a role default, so this is a safety net).
+    private int SelectedIndex
+    {
+        get
+        {
+            for (var index = 0; index < Transcript.Count; index++)
+                if (Transcript[index].Id == _selectedTurnId) return index;
+            return -1;
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_sessionId != DeliberationId)
+        {
+            _sessionId = DeliberationId;
+            _selectedTurnId = null;
+            _knownTurnIds.Clear();
+            _newResponseIds.Clear();
+            _followingLive = true;
+            _inspector = InspectorKind.None;
+            _memberKey = null;
+            _showDossierSource = false;
+            _showTimeline = false;
+            _responseScrollAction = "bottom";
+            _timelineScrollRequested = true;
+            // Layout is a reader preference, not session state.
+        }
+
+        foreach (var turn in Transcript)
+            if (_knownTurnIds.Add(turn.Id) && !_followingLive) _newResponseIds.Add(turn.Id);
+
+        if (_followingLive || SelectedIndex < 0)
+            _selectedTurnId = Transcript.LastOrDefault()?.Id;
+
+        _orderedEvents = ModeratorEvents.OrderBy(e => e.Sequence).ToArray();
+    }
+
+    private static bool HasPosition(SeatVm seat) => !string.IsNullOrWhiteSpace(seat.PositionSummary) || !string.IsNullOrWhiteSpace(seat.Detail);
+
+    private string PositionStatus(SeatVm seat) => seat.IsChair
+        ? (seat.Blocked ? "Synthesis blocked" : Completed ? "Assessment delivered" : "Prepares the Assessment")
+        : HasPosition(seat) ? "Initial position recorded"
+        : seat.Blocked ? "Initial position blocked by the content-safety policy"
+        : AssessmentConfirmed && !seat.IsChair ? "No position recorded"
+        : seat.Assessing ? "Forming an initial position…" : "No initial position received yet.";
+
+    private string SeatStatus(SeatVm seat) => seat.Speaking ? "Has the floor" : seat.MicLive ? "Microphone live"
+        : seat.HandRaised ? "Hand raised" : seat.Assessing ? "Forming a position" : PositionStatus(seat);
+
+    private static string TurnKind(TurnVm turn) => turn.IsSynthesis ? "Assessment" : turn.IsNexus ? "Nexus"
+        : turn.IsAssessment ? "Initial position" : "Response";
+
+    private static string TurnStatus(TurnVm turn) => turn.Blocked ? "Content blocked"
+        : turn.Speaking ? (turn.IsSynthesis ? "Assessment in progress" : turn.IsNexus ? "Nexus in progress" : "Has the floor") : TurnKind(turn);
+
+    private static string EventKindLabel(ModeratorEventKind kind) => kind switch
+    {
+        ModeratorEventKind.CallForHands => "Call for hands",
+        ModeratorEventKind.HandRaised => "Hand raised",
+        ModeratorEventKind.SpeakerSelected => "Speaker selected",
+        ModeratorEventKind.Phase => "Phase",
+        ModeratorEventKind.Warning => "Warning",
+        ModeratorEventKind.Connection => "Connection",
+        _ => "Status"
+    };
+
+    private static string EventClass(ModeratorEventKind kind) => kind switch
+    {
+        ModeratorEventKind.CallForHands or ModeratorEventKind.HandRaised => "gc-debate-event-call",
+        ModeratorEventKind.SpeakerSelected => "gc-debate-event-selection",
+        ModeratorEventKind.Warning or ModeratorEventKind.Connection => "gc-debate-event-warning",
+        _ => string.Empty
+    };
+
+    private static string Preview(string value, int limit) => value.Length <= limit ? value : value[..limit].TrimEnd() + "…";
+    private static bool IsSafeCitation(string? url) => Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
+
+    private void PauseFollowing() => _followingLive = false;
+
+    [JSInvokable]
+    public Task PauseResponseFollow() => _disposed ? Task.CompletedTask : InvokeAsync(() =>
+    {
+        if (!_followingLive) return;
+        PauseFollowing();
+        StateHasChanged();
+    });
+
+    private void SelectResponse(ChangeEventArgs args)
+    {
+        if (Guid.TryParse(args.Value?.ToString(), out var id) && Transcript.Any(t => t.Id == id))
+            ReadResponse(id);
+    }
+
+    private void MoveResponse(int direction)
+    {
+        var index = SelectedIndex + direction;
+        if (index >= 0 && index < Transcript.Count) ReadResponse(Transcript[index].Id);
+    }
+
+    private void ReadResponse(Guid id)
+    {
+        PauseFollowing();
+        _selectedTurnId = id;
+        _newResponseIds.Remove(id);
+        _responseScrollAction = "top";
+    }
+
+    private void ReturnToLive()
+    {
+        _followingLive = true;
+        _newResponseIds.Clear();
+        _selectedTurnId = Transcript.LastOrDefault()?.Id;
+        _responseScrollAction = "bottom";
+    }
+
+    private void OpenMember(string key, string origin)
+    {
+        PauseFollowing();
+        _memberKey = key;
+        _inspector = InspectorKind.Member;
+        _inspectorOrigin = origin;
+        _showTimeline = false;
+        _pendingFocusId = InspectorTitleId;
+    }
+
+    private void OpenDossier()
+    {
+        PauseFollowing();
+        _inspector = InspectorKind.Dossier;
+        _inspectorOrigin = DossierButtonId;
+        _showTimeline = false;
+        _pendingFocusId = InspectorTitleId;
+    }
+
+    private void CloseInspector()
+    {
+        _inspector = InspectorKind.None;
+        _pendingFocusId = _inspectorOrigin ?? ResponseScrollId;
+    }
+
+    private void OnInspectorKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape") CloseInspector();
+    }
+
+    private void ToggleTimeline() => _showTimeline = !_showTimeline;
+    private void ShowLatestEvent() => _timelineScrollRequested = true;
+
     private static RenderFragment AvatarInner(string? avatar, string initials) => builder =>
     {
         if (!string.IsNullOrEmpty(avatar))
@@ -254,74 +626,57 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Auto-scroll the transcript to the newest turn as content streams in.
-        // Skip first render and prerender; guard interop so it never throws.
-        if (firstRender || Transcript is not { Count: > 0 }) return;
-        try { await JS.InvokeVoidAsync("debateScroll.toBottom", "gc-transcript"); }
-        catch (InvalidOperationException) { /* JS interop not available during prerender */ }
-        catch (JSDisconnectedException) { /* circuit disconnected */ }
-    }
-
-    // Position member i of n along a parliamentary hemicycle (percent of the chamber box), adapting
-    // to the member count: a single arc reads cleanly up to ~9 seats (the supported maximum), and
-    // beyond that seats wrap into concentric arcs so they never overlap or clip. The angular sweep and
-    // a per-seat scale also tighten as density grows, while small N stays centred and intentional.
-    // Returns (left%, top%, scale) — scale feeds the --seat-scale CSS variable.
-    private static (double left, double top, double scale) ArcPosition(int i, int n)
-    {
-        var rows = n <= 9 ? 1 : n <= 16 ? 2 : 3;
-        var perRow = DistributeRows(n, rows);
-
-        // Locate this seat's row (outer/back row first) and its index within that row.
-        int row = 0, idxInRow = i, seen = 0;
-        for (var r = 0; r < rows; r++)
+        if (_disposed || _interopUnavailable) return;
+        _reference ??= DotNetObjectReference.Create(this);
+        var options = new
         {
-            if (i < seen + perRow[r]) { row = r; idxInRow = i - seen; break; }
-            seen += perRow[r];
-        }
-        var countInRow = perRow[row];
-
-        // Outer row is the largest, highest arc; inner rows step inward and slightly down toward the Chair.
-        var rx = 44.0 - row * 13.0;
-        var ry = 58.0 - row * 14.0;
-        var baseTop = 72.0 - row * 3.0;
-
-        // ~30° between adjacent seats, capped so a full row fans across the chamber. Tiny rows cluster
-        // centrally (sweep ≈ 0 for one seat) rather than pinning to the extremes.
-        var sweep = Math.Min(150.0, 30.0 * (countInRow - 1));
-        const double centre = 90.0;
-        var startDeg = centre + sweep / 2.0;   // left
-        var endDeg = centre - sweep / 2.0;     // right
-        var frac = countInRow <= 1 ? 0.5 : (double)idxInRow / (countInRow - 1);
-        var deg = startDeg + (endDeg - startDeg) * frac;
-        var rad = deg * Math.PI / 180.0;
-
-        var left = 50 + rx * Math.Cos(rad);
-        var top = baseTop - ry * Math.Sin(rad);
-
-        var scale = n <= 5 ? 1.0 : n <= 8 ? 0.9 : n <= 12 ? 0.82 : 0.72;
-        return (Math.Round(left, 2), Math.Round(top, 2), Math.Round(scale, 3));
-    }
-
-    // Split n members across the given number of arcs, weighting each row by its arc width so the
-    // larger back rows hold proportionally more seats (a hemicycle fans wider at the back). Any
-    // remainder goes to the outer rows first. e.g. 12 over 2 rows ⇒ [7, 5].
-    private static int[] DistributeRows(int n, int rows)
-    {
-        var weights = new double[rows];
-        double total = 0;
-        for (var r = 0; r < rows; r++) { weights[r] = 44.0 - r * 13.0; total += weights[r]; }
-
-        var result = new int[rows];
-        var assigned = 0;
-        for (var r = 0; r < rows; r++)
+            session = DeliberationId,
+            following = _followingLive,
+            responseAction = _responseScrollAction,
+            timelineToBottom = _timelineScrollRequested,
+            focusId = _pendingFocusId,
+            fallbackFocusId = ResponseScrollId
+        };
+        _responseScrollAction = null;
+        _timelineScrollRequested = false;
+        _pendingFocusId = null;
+        try
         {
-            result[r] = (int)Math.Floor(n * weights[r] / total);
-            assigned += result[r];
+            await JS.InvokeVoidAsync("debateScroll.sync", _lifetime.Token, _root, _reference, options);
         }
-        for (var r = 0; assigned < n; r = (r + 1) % rows) { result[r]++; assigned++; }
-        return result;
+        catch (JSDisconnectedException) { /* The parent owns reconnection. */ }
+        catch (OperationCanceledException) when (_disposed) { }
+        catch (JSException exception)
+        {
+            Logger.LogError(exception, "Debate presentation interop failed for {DeliberationId}", DeliberationId);
+            _interopUnavailable = true;
+            await InvokeAsync(StateHasChanged);
+        }
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        await _lifetime.CancelAsync();
+        try
+        {
+            if (_reference is not null) await JS.InvokeVoidAsync("debateScroll.dispose", _root);
+        }
+        catch (JSDisconnectedException) { }
+        catch (OperationCanceledException) when (_disposed) { }
+        catch (JSException exception)
+        {
+            Logger.LogWarning(exception, "Could not release debate presentation interop for {DeliberationId}", DeliberationId);
+        }
+        finally
+        {
+            _reference?.Dispose();
+            _lifetime.Dispose();
+        }
+    }
+
+    public enum ModeratorEventKind { CallForHands, HandRaised, SpeakerSelected, Phase, Status, Warning, Connection }
+    public sealed record ModeratorEventVm(long Sequence, DateTimeOffset ReceivedAt, int Round, ModeratorEventKind Kind, string Title, string? Detail);
 
     public sealed class SeatVm
     {
@@ -344,6 +699,7 @@
 
     public sealed class TurnVm
     {
+        public required Guid Id { get; init; }
         public required string DisplayName { get; init; }
         public required string Role { get; init; }
         public required string Initials { get; init; }

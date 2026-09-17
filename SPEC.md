@@ -42,6 +42,17 @@ decisions interconnect over time. The template is **scenario-neutral**; a concre
 - Blazor Server app with SignalR live updates: dashboard, Dossier Library, Assessment detail, Nexus
   Explorer (graph) + Alerts, and the live debate chamber. Branding (name, org, tagline, emblem) is
   config-driven; the dark theme is shared by default.
+- Use a consistent navigation shell, page headers, toolbars, and empty states across all pages.
+- The live debate offers **Live desk** and **Focus stage**. Switching layouts does not restart the
+  debate or discard responses.
+- Keep the moderator announcement and raised-hand reasons outside the response scroll area.
+  Readers can inspect earlier responses and return to the latest response.
+- Show moderator activity chronologically: calls for hands, member bids, speaker selections, and
+  the supplied selection reasons. Show the local receipt time and round.
+- The moderator timeline contains events received while the view is open. Reloading clears it.
+  Reconnecting rejoins the debate group but does not replay missed events.
+- Keep dossier and member details within the debate workspace. Preserve initial positions,
+  content-safety notices, citations, Assessment links, and Nexus status.
 
 ## Non-functional requirements
 

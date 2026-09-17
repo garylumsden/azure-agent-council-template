@@ -1,0 +1,46 @@
+.assessment-detail-page { min-width: 0; }
+.assessment-detail-page p.gc-meta { display: block; max-width: 75ch; }
+.assessment-breadcrumb { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; color: var(--gc-text-muted); font-size: .85rem; }
+.assessment-heading { min-width: 0; overflow-wrap: anywhere; }
+.assessment-heading .gc-page-title { max-width: 48ch; }
+.assessment-record-meta { display: flex; flex-wrap: wrap; gap: 1rem 2.5rem; margin: 0 0 1.25rem; }
+.assessment-record-meta dt { color: var(--gc-text-muted); font-size: .8rem; font-weight: 400; margin-bottom: .4rem; }
+.assessment-record-meta dd { margin: 0; overflow-wrap: anywhere; }
+.assessment-detail-page .gc-pill { white-space: normal; text-align: left; overflow-wrap: anywhere; }
+.assessment-section-nav { flex-wrap: wrap; gap: .65rem 1.25rem; padding-block: .85rem; border-top: 1px solid var(--gc-border); border-bottom: 1px solid var(--gc-border); font-size: .85rem; }
+.assessment-section { margin-top: 2.25rem; scroll-margin-top: 1rem; }
+.assessment-decision { padding: 1.25rem; }
+.assessment-narrative { max-width: 75ch; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; margin: 0; }
+.assessment-subheading { font-size: 1rem; margin: 1.5rem 0 .75rem; }
+.assessment-conditions { max-width: 75ch; padding-left: 1.5rem; line-height: 1.7; margin-bottom: 0; }
+.assessment-conditions li { padding-left: .3rem; margin-bottom: .6rem; white-space: pre-line; overflow-wrap: anywhere; }
+.assessment-record-list { list-style: none; padding: 0; margin: 0; }
+.assessment-member-row, .assessment-risk-row, .assessment-nexus-row { border-bottom: 0; display: block; padding: 1.25rem; }
+.assessment-record-list > li + li { border-top: 1px solid var(--gc-border); }
+.assessment-member-row h3, .assessment-risk-row h3, .assessment-nexus-row h3, .assessment-turn h3 { font-size: 1rem; line-height: 1.5; margin: 0 0 .6rem; overflow-wrap: anywhere; }
+.assessment-member-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: .5rem 1rem; margin-bottom: .75rem; }
+.assessment-member-heading h3 { margin: 0; }
+.assessment-risk-detail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; margin: .75rem 0 0; }
+.assessment-risk-detail dt { color: var(--gc-text-muted); font-size: .8rem; font-weight: 600; margin-bottom: .4rem; }
+.assessment-related-link { margin: .75rem 0 0; overflow-wrap: anywhere; }
+.assessment-speaker-filter { flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .75rem; }
+.assessment-speaker-filter button { white-space: normal; overflow-wrap: anywhere; }
+.assessment-transcript { border-top: 1px solid var(--gc-border); }
+.assessment-routing { margin: 0; padding: .65rem 0; font-size: .8rem; overflow-wrap: anywhere; }
+.assessment-turn { display: grid; grid-template-columns: 4rem minmax(0, 1fr); gap: 1rem; padding: 1.25rem 0; border-bottom: 1px solid var(--gc-border); }
+.assessment-turn-number { padding-top: .2rem; font-size: .8rem; }
+.assessment-turn-content { min-width: 0; }
+.assessment-minutes-prose { max-width: 75ch; color: var(--gc-text); }
+.assessment-minutes-prose ::deep img { max-width: 100%; height: auto; }
+.assessment-minutes-prose ::deep table { display: block; overflow-x: auto; }
+.assessment-minutes-prose ::deep pre { max-width: 100%; overflow-x: auto; }
+.assessment-minutes-prose ::deep blockquote { border-left-width: 1px; color: var(--gc-text-muted); }
+.assessment-footer { flex-wrap: wrap; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--gc-border); }
+@media (max-width: 720px) {
+    .assessment-risk-detail { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+    .assessment-decision, .assessment-member-row, .assessment-risk-row, .assessment-nexus-row { padding: 1rem; }
+}
+@media (max-width: 480px) {
+    .assessment-turn { grid-template-columns: minmax(0, 1fr); gap: .4rem; }
+    .assessment-section-nav { gap: .65rem 1rem; }
+}

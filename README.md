@@ -135,9 +135,28 @@ Everything scenario-specific lives in **`config/`** (read at startup; see
   fire dozens of search calls per turn.
 - **Nexus retrieval is efficient**: each assessment's summary is embedded once at creation and stored;
   Top-K candidate retrieval uses **Cosmos DB NoSQL vector search** (no corpus re-embedding).
-- **Live debate** over SignalR: per-seat hand-raises, push-to-talk, citations, a scrolling transcript.
+- **Live debate** over SignalR: choose **Live desk** or **Focus stage** without restarting the debate.
+  Read responses independently of the moderator announcement and raised-hand reasons.
+  A moderator timeline shows calls for hands, bids, speaker selections, and the supplied reasons.
+  Entries show the local receipt time and round. They last only while the view remains open;
+  reconnecting does not recover missed events.
+- **Consistent app UI**: shared navigation, page headers, action groups, and readable empty states
+  across dossiers, assessments, and Nexus pages.
 
 See `ARCHITECTURE.md` for the full picture and `docs/DESIGN.md` for the design system.
+
+## Interactive debate wireframes
+
+The [Debate design lab](docs/wireframes/debate/README.md) preserves the five original wireframe ideas.
+**Live desk** and **Focus stage** were selected for the live app. The other three ideas remain
+historical prototypes only. The design lab uses synthetic data and does not connect to the live app.
+
+```powershell
+node docs\wireframes\debate\serve.mjs
+```
+
+Open <http://127.0.0.1:4317>.
+Switch layouts, advance the simulated debate, inspect raised hands, and compare responses.
 
 ---
 

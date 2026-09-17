@@ -13,158 +13,202 @@
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
-<PageTitle>Dossiers</PageTitle>
+<PageTitle>Dossier library — @Brand.AppName</PageTitle>
 
-<header class="gc-page-head">
-    <span class="gc-eyebrow">Deliberation</span>
-    <h1>Dossiers</h1>
-    <p class="lead">Upload dossiers for the council to deliberate.</p>
-</header>
-
-<div class="card mb-4">
-    <div class="card-header d-flex align-items-center gap-2">
-        ⚙️ Council settings
-        <span class="badge bg-info text-dark">@CouncilModels.ProfileDisplayName</span>
-        <span class="badge bg-info text-dark">@Grounding.DisplayName(Grounding.Active)</span>
-        <span class="badge bg-info text-dark">@AgentRuntime.DisplayName(AgentRuntime.Active)</span>
-    </div>
-    <div class="card-body">
-
-        <div class="d-flex align-items-end gap-3 flex-wrap">
-            <div>
-                <label class="form-label mb-1">Model profile</label>
-                <select class="form-select" style="min-width:14rem;" @bind="_selectedProfile" disabled="@_applying">
-                    @foreach (var p in CouncilModels.AllProfiles)
-                    {
-                        <option value="@p">@CouncilModels.DisplayName(p)</option>
-                    }
-                </select>
-            </div>
-            <div>
-                <label class="form-label mb-1">Grounding provider</label>
-                <select class="form-select" style="min-width:14rem;" @bind="_selectedProvider" disabled="@_applying">
-                    @foreach (var p in Grounding.AllProviders)
-                    {
-                        <option value="@p">@Grounding.DisplayName(p)</option>
-                    }
-                </select>
-            </div>
-            <div>
-                <label class="form-label mb-1">Agent runtime</label>
-                <select class="form-select" style="min-width:14rem;" @bind="_selectedRuntime" disabled="@_applying">
-                    @foreach (var r in AgentRuntime.AllModes)
-                    {
-                        <option value="@r">@AgentRuntime.DisplayName(r)</option>
-                    }
-                </select>
-            </div>
-            <FluentButton Appearance="Appearance.Accent" OnClick="ApplySettingsAsync"
-                    Disabled="@(_applying || !SettingsChanged)">
-                @(_applying ? "Applying…" : "Apply & re-provision")
+<div class="dossier-library">
+    <header class="gc-page-header">
+        <div>
+            <h1 class="gc-page-title">Dossier library</h1>
+            <p class="gc-page-description">Choose a dossier to start a council deliberation, or upload a Markdown file.</p>
+        </div>
+        <div class="gc-action-group">
+            <FluentButton Appearance="Appearance.Accent" OnClick="ToggleUpload"
+                          aria-expanded="@(_showUpload ? "true" : "false")" aria-controls="dossier-upload">
+                @(_showUpload ? "Close upload" : "Upload dossier")
             </FluentButton>
         </div>
-        <small class="text-muted d-block mt-2">
-            Applying re-provisions all council agents (takes a few seconds). <strong>Model profile</strong>
-            picks the model set; <strong>grounding</strong> (Web IQ / Foundry IQ) restricts each agent to
-            its authoritative domains (the Chair gets them all); <strong>runtime</strong> chooses Foundry
-            Prompt Agents or local MAF agents. In-memory only — reverts to the configured defaults on
-            restart. Avoid switching during an active debate.
-        </small>
-        @if (_settingsMessage is not null)
-        {
-            <div class="alert @(_applying ? "alert-info" : "alert-success") mt-2 mb-0 py-2">@_settingsMessage</div>
-        }
-    </div>
-</div>
+    </header>
 
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">Upload Markdown File</div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label">Title</label>
-                    <input type="text" class="form-control" @bind="_mdFileTitle" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Markdown File (.md)</label>
-                    <InputFile OnChange="OnMdFileSelected" class="form-control" accept=".md,.markdown,.txt" />
-                </div>
-                <FluentButton Appearance="Appearance.Accent" OnClick="UploadMdFile" Disabled="@(_uploadingMd || _selectedMdFile is null)">
-                    @(_uploadingMd ? "Uploading..." : "Upload File")
+    <section id="dossier-upload" class="gc-surface upload-panel" hidden="@(!_showUpload)" aria-labelledby="upload-heading">
+        <div class="gc-section-header">
+            <h2 id="upload-heading">Upload a dossier</h2>
+        </div>
+        <div class="upload-fields">
+            <div class="library-field">
+                <FluentTextField @ref="_titleInput" Label="Dossier title" @bind-Value="_mdFileTitle" Immediate="true" Required="true"
+                                 Disabled="@_uploadingMd" />
+            </div>
+            <div class="library-field">
+                <label for="markdown-file">Markdown file</label>
+                <InputFile @key="_fileInputVersion" id="markdown-file" OnChange="OnMdFileSelected" class="form-control"
+                           accept=".md,.markdown,.txt" disabled="@_uploadingMd" aria-describedby="upload-file-help" />
+                <p id="upload-file-help" class="gc-meta field-help">.md, .markdown or .txt · Up to 10 MB</p>
+            </div>
+            <div class="upload-action">
+                <FluentButton Appearance="Appearance.Accent" OnClick="UploadMdFile"
+                              Disabled="@(_uploadingMd || _selectedMdFile is null || string.IsNullOrWhiteSpace(_mdFileTitle))">
+                    @(_uploadingMd ? "Uploading…" : "Upload file")
                 </FluentButton>
             </div>
         </div>
-    </div>
-</div>
+    </section>
 
-@if (!string.IsNullOrEmpty(_message))
-{
-    <div class="alert alert-info">@_message</div>
-}
+    <section class="gc-surface library-setup" aria-label="Council settings">
+        <FluentAccordion>
+            <FluentAccordionItem HeadingLevel="2">
+                <HeadingTemplate>
+                    <span class="settings-summary">
+                        <span class="settings-title">Council settings</span>
+                        <span class="gc-meta settings-active">
+                            @CouncilModels.ProfileDisplayName · @Grounding.DisplayName(Grounding.Active) · @AgentRuntime.DisplayName(AgentRuntime.Active)
+                        </span>
+                        <span class="gc-meta">Content safety: @(_currentSafetyKnown ? SafetyLabel(_currentSafety) : "Unknown")</span>
+                        @if (SafetyChanged)
+                        {
+                            <span class="gc-pill badge-conditions">Next: @SafetyLabel(_selectedViolence)</span>
+                        }
+                    </span>
+                </HeadingTemplate>
+                <ChildContent>
+                    <div class="settings-content">
+                        <div class="settings-fields">
+                            <div class="library-field">
+                                <FluentSelect TOption="CouncilModels.ModelProfile" Label="Model profile" Items="@CouncilModels.AllProfiles"
+                                              OptionText="@(profile => CouncilModels.DisplayName(profile))"
+                                              OptionValue="@(profile => profile.ToString())" @bind-SelectedOption="_selectedProfile"
+                                              Disabled="@(_applying || DossierActionInProgress)" />
+                                <p class="gc-meta field-help">The model set used by the council.</p>
+                            </div>
+                            <div class="library-field">
+                                <FluentSelect TOption="Grounding.Provider" Label="Grounding provider" Items="@Grounding.AllProviders"
+                                              OptionText="@(provider => Grounding.DisplayName(provider))"
+                                              OptionValue="@(provider => provider.ToString())" @bind-SelectedOption="_selectedProvider"
+                                              Disabled="@(_applying || DossierActionInProgress)" />
+                                <p class="gc-meta field-help">Each agent uses its authoritative domains; the Chair gets them all.</p>
+                            </div>
+                            <div class="library-field">
+                                <FluentSelect TOption="AgentRuntime.Mode" Label="Agent runtime" Items="@AgentRuntime.AllModes"
+                                              OptionText="@(runtime => AgentRuntime.DisplayName(runtime))"
+                                              OptionValue="@(runtime => runtime.ToString())" @bind-SelectedOption="_selectedRuntime"
+                                              Disabled="@(_applying || DossierActionInProgress)" />
+                                <p class="gc-meta field-help">Foundry Prompt Agents or local Microsoft Agent Framework agents.</p>
+                            </div>
+                        </div>
+                        <div class="settings-apply">
+                            <FluentButton Appearance="Appearance.Neutral" OnClick="ApplySettingsAsync"
+                                          Disabled="@(_applying || DossierActionInProgress || !SettingsChanged)">
+                                @(_applying ? "Applying…" : "Apply & re-provision")
+                            </FluentButton>
+                            <p class="gc-meta">Re-provisions all council agents and takes a few seconds. Changes are in memory and reset on restart. <strong>Avoid switching during an active debate.</strong></p>
+                        </div>
 
-<section class="gc-section">
-    <div class="gc-section-head d-flex align-items-end justify-content-between flex-wrap gap-2">
-        <h2 class="mb-0">All dossiers</h2>
-        <div title="Single-presenter demo control. Adjusts the content-safety policy strictness before the next deliberation — account-global and takes a few seconds to apply, so don't run concurrent deliberations.">
-            <label class="form-label mb-1 small">
-                Content safety
-                @if (_currentSafetyKnown)
-                {
-                    <span class="text-muted">— current: <strong>@SafetyLabel(_currentSafety)</strong></span>
-                }
-            </label>
-            <select class="form-select form-select-sm" style="min-width:12rem;" @bind="_selectedViolence">
-                @if (!_currentSafetyKnown)
-                {
-                    <option value="">Unchanged (current policy)</option>
-                }
-                <option value="Low">Strict</option>
-                <option value="Medium">Standard</option>
-                <option value="High">Relaxed</option>
-            </select>
-            <div class="form-text small">
-                Changing this is applied at the start of the next deliberation (a few seconds).
-                <strong>It changes the account-global policy for every app that uses this Azure AI account.</strong>
-            </div>
+                        <div class="safety-settings">
+                            <div class="library-field">
+                                <FluentSelect TOption="string" Label="Safety for next deliberation" @bind-Value="_selectedViolence"
+                                              Disabled="@DossierActionInProgress" aria-describedby="safety-help">
+                                    @if (!_currentSafetyKnown)
+                                    {
+                                        <FluentOption Value="">Unchanged (current policy)</FluentOption>
+                                    }
+                                    <FluentOption Value="Low">Strict</FluentOption>
+                                    <FluentOption Value="Medium">Standard</FluentOption>
+                                    <FluentOption Value="High">Relaxed</FluentOption>
+                                </FluentSelect>
+                                <p class="gc-meta field-help">Current policy: @(_currentSafetyKnown ? SafetyLabel(_currentSafety) : "Unknown")</p>
+                            </div>
+                            <div id="safety-help" class="safety-help">
+                                <p><strong>Content safety changes the account-global policy</strong> for every app using this Azure AI account.</p>
+                                <p class="gc-meta">A changed selection is confirmed and applied when the next deliberation starts, not by the Apply button above. It takes a few seconds. Use this as a single-presenter control; do not run concurrent deliberations.</p>
+                            </div>
+                        </div>
+                    </div>
+                </ChildContent>
+            </FluentAccordionItem>
+        </FluentAccordion>
+    </section>
+
+    @if (_settingsMessage is not null)
+    {
+        <div class="alert @(_settingsFailed ? "alert-danger" : _applying ? "alert-info" : "alert-success")"
+             role="@(_settingsFailed ? "alert" : "status")">@_settingsMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <div class="alert @(_messageIsError ? "alert-danger" : "alert-info")"
+             role="@(_messageIsError ? "alert" : "status")">@_message</div>
+    }
+
+    <section class="library-dossiers" aria-labelledby="dossiers-heading">
+        <div class="gc-section-header">
+            <h2 id="dossiers-heading">All dossiers</h2>
+            @if (_dossiers is not null)
+            {
+                <span class="gc-meta">@_dossiers.Count @(_dossiers.Count == 1 ? "dossier" : "dossiers")</span>
+            }
         </div>
-    </div>
-@if (_dossiers is null)
-{
-    <p class="text-muted">Loading…</p>
-}
-else if (!_dossiers.Any())
-{
-    <div class="gc-card gc-empty">No dossiers yet. Upload or fetch one above.</div>
-}
-else
-{
-    <div class="gc-card gc-grid-card">
-        <FluentDataGrid Items="@_dossiers.AsQueryable()" TGridItem="Dossier" GridTemplateColumns="1fr 2.4fr 1fr 1.1fr 2fr" Class="gc-grid">
-            <TemplateColumn Title="ID">@context.DossierId</TemplateColumn>
-            <TemplateColumn Title="Title">@context.Title</TemplateColumn>
-            <TemplateColumn Title="Source">
-                <span class="gc-pill badge-abstain">@context.Source</span>
-            </TemplateColumn>
-            <TemplateColumn Title="Date">
-                <span class="text-muted">@context.UploadedDate.ToString("dd MMM yyyy")</span>
-            </TemplateColumn>
-            <TemplateColumn Title="Actions" Align="Align.End">
-                <div class="gc-row-actions">
-                    <FluentButton Appearance="Appearance.Accent" OnClick="@(() => SubmitDeliberation(context.DossierId))">Deliberate</FluentButton>
-                    <FluentAnchor Href="@($"/dossier/{context.DossierId}")" Appearance="Appearance.Neutral">View</FluentAnchor>
-                    <FluentButton Appearance="Appearance.Stealth" OnClick="@(() => DeleteDossier(context))">Delete</FluentButton>
-                </div>
-            </TemplateColumn>
-        </FluentDataGrid>
-    </div>
-}
-</section>
+        @if (_dossiers is null)
+        {
+            <div class="gc-empty-state" role="status" aria-live="polite">Loading dossiers…</div>
+        }
+        else if (!_dossiers.Any())
+        {
+            <div class="gc-empty-state gc-surface">
+                <h3>No dossiers yet</h3>
+                <p>Upload a Markdown file to give the council a document to deliberate.</p>
+                @if (!_showUpload)
+                {
+                    <FluentButton Appearance="Appearance.Accent" OnClick="ToggleUpload" aria-controls="dossier-upload">Upload a dossier</FluentButton>
+                }
+            </div>
+        }
+        else
+        {
+            <ul class="gc-surface dossier-list">
+                @foreach (var dossier in _dossiers)
+                {
+                    <li class="gc-list-row dossier-row" @key="dossier.DossierId">
+                        <div class="dossier-summary">
+                            <h3><a href="/dossier/@dossier.DossierId">@dossier.Title</a></h3>
+                            <div class="gc-meta dossier-meta">
+                                <span>@dossier.DossierId</span>
+                                <span class="gc-pill badge-abstain">@dossier.Source</span>
+                                <span>Uploaded <time datetime="@dossier.UploadedDate.ToString("O")">@dossier.UploadedDate.ToString("dd MMM yyyy")</time></span>
+                            </div>
+                        </div>
+                        <div class="gc-action-group dossier-actions" role="group" aria-label="@($"Actions for {dossier.Title}")">
+                            <FluentButton Appearance="Appearance.Accent" OnClick="@(() => SubmitDeliberation(dossier.DossierId))"
+                                          Disabled="@(_applying || DossierActionInProgress)">
+                                @(_startingDossierId == dossier.DossierId ? "Starting…" : "Deliberate")
+                            </FluentButton>
+                            <FluentAnchor Href="@($"/dossier/{dossier.DossierId}")" Appearance="Appearance.Neutral">View</FluentAnchor>
+                            <FluentButton Appearance="Appearance.Stealth" OnClick="@(() => DeleteDossier(dossier))" Disabled="@DossierActionInProgress">
+                                @(_deletingDossierId == dossier.DossierId ? "Deleting…" : "Delete")
+                            </FluentButton>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</div>
 
 @code {
     private IReadOnlyList<Dossier>? _dossiers;
     private string _message = "";
     private bool _uploadingMd;
+    private bool _showUpload;
+    private bool _focusUpload;
+    private FluentTextField? _titleInput;
+    private bool _messageIsError;
+    private bool _settingsFailed;
+    private int _fileInputVersion;
+    private string? _startingDossierId;
+    private string? _deletingDossierId;
+
+    private bool DossierActionInProgress => _startingDossierId is not null || _deletingDossierId is not null;
+    private bool SafetyChanged => !string.IsNullOrEmpty(_selectedViolence)
+        && !string.Equals(_selectedViolence, _currentSafety, StringComparison.OrdinalIgnoreCase);
     private IBrowserFile? _selectedMdFile;
     private string _mdFileTitle = "";
 
@@ -196,8 +240,9 @@ else
 
     private async Task ApplySettingsAsync()
     {
-        if (_applying || !SettingsChanged) return;
+        if (_applying || DossierActionInProgress || !SettingsChanged) return;
         _applying = true;
+        _settingsFailed = false;
         _settingsMessage = "Re-provisioning the council…";
         StateHasChanged();
         try
@@ -210,7 +255,8 @@ else
         }
         catch (Exception ex)
         {
-            _settingsMessage = $"Apply failed: {ex.Message}";
+            _settingsFailed = true;
+            _settingsMessage = $"Could not apply council settings: {ex.Message}. Review the selections and try again.";
         }
         finally
         {
@@ -222,6 +268,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         _dossiers = await DossierStore.ListAsync();
+        _showUpload = _dossiers.Count == 0;
 
         // Read the live content-safety level from the control plane so the presenter sees the current
         // setting and the dropdown reflects it. Best-effort: unavailable (local run / no RBAC) ⇒ Unknown.
@@ -237,6 +284,22 @@ else
         catch { /* leave as Unknown / Unchanged */ }
     }
 
+    private void ToggleUpload()
+    {
+        _showUpload = !_showUpload;
+        _focusUpload = _showUpload;
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusUpload && _titleInput is not null)
+        {
+            _focusUpload = false;
+            _titleInput.FocusAsync();
+        }
+        return Task.CompletedTask;
+    }
+
     private void OnMdFileSelected(InputFileChangeEventArgs e)
     {
         _selectedMdFile = e.File;
@@ -248,9 +311,10 @@ else
 
     private async Task UploadMdFile()
     {
-        if (_selectedMdFile is null || string.IsNullOrWhiteSpace(_mdFileTitle)) return;
+        if (_uploadingMd || _selectedMdFile is null || string.IsNullOrWhiteSpace(_mdFileTitle)) return;
         _uploadingMd = true;
         _message = "";
+        _messageIsError = false;
         try
         {
             using var reader = new StreamReader(_selectedMdFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
@@ -260,10 +324,12 @@ else
             _dossiers = await DossierStore.ListAsync();
             _mdFileTitle = "";
             _selectedMdFile = null;
+            _fileInputVersion++;
         }
         catch (Exception ex)
         {
-            _message = $"Upload failed: {ex.Message}";
+            _messageIsError = true;
+            _message = $"Upload failed: {ex.Message}. Check the file and try again.";
         }
         finally
         {
@@ -273,7 +339,10 @@ else
 
     private async Task SubmitDeliberation(string dossierId)
     {
+        if (_applying || DossierActionInProgress) return;
+        _startingDossierId = dossierId;
         _message = "";
+        _messageIsError = false;
 
         try
         {
@@ -281,8 +350,7 @@ else
 
             // Only pass the content-safety level when the presenter actually changed it from the live
             // value — otherwise there's nothing to apply (no control-plane call, no "applying" delay).
-            var changed = !string.IsNullOrEmpty(_selectedViolence)
-                && !string.Equals(_selectedViolence, _currentSafety, StringComparison.OrdinalIgnoreCase);
+            var changed = SafetyChanged;
 
             // The content-safety policy is account-global: it affects every application that uses
             // this Azure AI account, not just this deliberation. Require an explicit confirmation.
@@ -309,7 +377,12 @@ else
         }
         catch (Exception ex)
         {
-            _message = $"❌ Failed to submit: {ex.Message}";
+            _messageIsError = true;
+            _message = $"Could not start deliberation: {ex.Message}. Try again.";
+        }
+        finally
+        {
+            _startingDossierId = null;
         }
     }
 
@@ -322,9 +395,16 @@ else
 
     private async Task DeleteDossier(Dossier dossier)
     {
+        if (DossierActionInProgress) return;
+        _deletingDossierId = dossier.DossierId;
         _message = "";
+        _messageIsError = false;
         try
         {
+            var confirmed = await JS.InvokeAsync<bool>("confirm",
+                $"Delete '{dossier.Title}'?\n\nThis permanently deletes the dossier and its stored files. This cannot be undone.");
+            if (!confirmed) return;
+
             // Delete blobs
             if (!string.IsNullOrEmpty(dossier.OriginalBlobPath))
                 await BlobService.DeleteBlobAsync(dossier.OriginalBlobPath);
@@ -339,7 +419,12 @@ else
         }
         catch (Exception ex)
         {
-            _message = $"❌ Delete failed: {ex.Message}";
+            _messageIsError = true;
+            _message = $"Delete failed: {ex.Message}. Try again.";
+        }
+        finally
+        {
+            _deletingDossierId = null;
         }
     }
 }

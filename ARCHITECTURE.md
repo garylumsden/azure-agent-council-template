@@ -257,6 +257,26 @@ Official guidance: [Foundry tools authentication and authorization using .NET](h
 
 ## Data Flow — Deliberation Lifecycle
 
+### Live debate presentation
+
+`LiveDeliberation.razor` receives SignalR events and updates UI state on the Blazor renderer.
+`DebateChamber.razor` renders two layouts: **Live desk** and **Focus stage**.
+The layouts share the same seats, response history, and selected response.
+Switching layouts does not call the orchestrator.
+
+The response area, moderator timeline, and raised-hand shelf have separate reading regions.
+The latest moderator announcement remains visible while the user reads an earlier response.
+Member and dossier details open within the workspace.
+
+The timeline records calls for hands, bids, speaker selections, supplied selection reasons, and
+status changes. Each entry records its local receipt time and round.
+The UI does not generate or expose internal model reasoning.
+
+Timeline entries exist only in the current view. Reloading does not restore them.
+After reconnecting, the page rejoins the SignalR group and marks the interruption.
+The hub does not replay missed events. Stored completion status remains available through polling.
+The timeline is a live observation aid, not a durable audit log.
+
 ```mermaid
 sequenceDiagram
     participant U as User (Browser)

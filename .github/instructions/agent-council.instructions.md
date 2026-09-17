@@ -60,7 +60,14 @@ The engine is **scenario-neutral**. A concrete demo is created by configuration,
   domains (`CouncilMembers.DomainsFor`); empty ⇒ ungrounded. Providers: Web IQ / Foundry IQ.
 - **Storage**: Cosmos DB (assessments, nexuses, dossiers, deliberations) + Blob (dossier markdown),
   identity-based. Nexus Top-K uses **Cosmos NoSQL vector search** over a persisted `/embedding`.
-- **UI**: Blazor Server + SignalR live debate.
+- **UI**: Blazor Server with shared task-first page headers, toolbars, and navigation.
+  The live debate offers **Live desk** and **Focus stage**, with independent response scrolling,
+  visible raised-hand reasons, and a moderator event timeline.
+  Keep selection and response history when switching layouts.
+  Record calls for hands, bids, selections, and supplied selection reasons from SignalR events;
+  never invent moderator reasoning.
+  Timeline receipt times are local. Entries last only while the view is open.
+  Rejoin the debate group after reconnecting and disclose gaps; the hub does not replay events.
 
 ## Dependency pins (do not drift)
 

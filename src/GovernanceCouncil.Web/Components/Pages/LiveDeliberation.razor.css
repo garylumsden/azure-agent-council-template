@@ -1,0 +1,62 @@
+.live-debate {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.25rem;
+    gap: .75rem;
+}
+
+.live-debate-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.live-debate-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.live-debate-heading a {
+    font-size: .8rem;
+    flex-shrink: 0;
+}
+
+.live-debate-heading h1 {
+    font-size: 1.3rem;
+    line-height: 1.35;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.live-debate-model {
+    color: var(--gc-text-muted);
+    font-size: .75rem;
+    flex-shrink: 0;
+}
+
+.live-debate-notice {
+    border: 1px solid var(--gc-border-strong);
+    background: var(--gc-surface);
+    border-radius: 6px;
+    padding: .5rem .75rem;
+    color: var(--gc-text-muted);
+    font-size: .8rem;
+    max-height: 5rem;
+    overflow: auto;
+    flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+    .live-debate { padding: .5rem; gap: .5rem; }
+    .live-debate-heading { gap: .5rem; }
+    .live-debate-heading h1 { font-size: 1rem; }
+    .live-debate-model { display: none; }
+}

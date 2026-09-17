@@ -1,57 +1,117 @@
-<div class="gc-brand">
-    <div class="gc-brand-emblem" aria-hidden="true">
-        @if (Brand.EmblemIsImage)
-        {
-            <img src="@Brand.Emblem" alt="" class="gc-brand-emblem-img" />
-        }
-        else
-        {
-            @Brand.Emblem
-        }
+@rendermode InteractiveServer
+@implements IDisposable
+@inject NavigationManager Navigation
+
+<div class="gc-navigation" @onkeydown="HandleNavigationKeyDown">
+    <div class="gc-nav-header">
+        <a class="gc-brand" href="" aria-label="@($"{Brand.AppName} dashboard")">
+            <span class="gc-brand-emblem" aria-hidden="true">
+                @if (Brand.EmblemIsImage)
+                {
+                    <img src="@Brand.Emblem" alt="" class="gc-brand-emblem-img" />
+                }
+                else
+                {
+                    @Brand.Emblem
+                }
+            </span>
+            <span class="gc-brand-text">
+                <span class="gc-brand-name">@Brand.AppName</span>
+                @if (Brand.HasOrganisation)
+                {
+                    <span class="gc-brand-organisation">@Brand.Organisation</span>
+                }
+            </span>
+        </a>
+        <button @ref="_menuButton" type="button" class="gc-menu-toggle"
+                aria-controls="primary-navigation" aria-expanded="@(_menuOpen ? "true" : "false")"
+                @onclick="ToggleMenu">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span>@(_menuOpen ? "Close" : "Menu")</span>
+        </button>
     </div>
-    <div class="gc-brand-text">
-        @if (Brand.HasOrganisation)
-        {
-            <span class="gc-brand-eyebrow">@Brand.Organisation</span>
-        }
-        <a class="gc-brand-name" href="">@Brand.AppName</a>
+
+    <div id="primary-navigation" class="gc-nav-panel @(_menuOpen ? "is-open" : null)">
+        <nav class="gc-nav-links" aria-label="Primary" @onclick="CloseMenu">
+            <NavLink class="gc-nav-link" href="" Match="NavLinkMatch.All">
+                <svg class="gc-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="m3 10 9-7 9 7M5 9v11h5v-6h4v6h5V9" />
+                </svg>
+                <span>Dashboard</span>
+            </NavLink>
+
+            <div class="gc-nav-group">
+                <NavLink class="gc-nav-link" href="dossiers">
+                    <svg class="gc-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M4 5h6l2 3h8v12H4ZM4 8h8" />
+                    </svg>
+                    <span>Dossiers</span>
+                </NavLink>
+                <NavLink class="gc-nav-link" href="assessments">
+                    <svg class="gc-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M7 3h10v4H7ZM7 5H4v16h16V5h-3M8 12h8M8 16h5" />
+                    </svg>
+                    <span>Assessments</span>
+                </NavLink>
+            </div>
+
+            <div class="gc-nav-group">
+                <NavLink class="gc-nav-link" href="nexus" Match="@NexusMatch">
+                    <svg class="gc-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <circle cx="6" cy="6" r="3" />
+                        <circle cx="18" cy="8" r="3" />
+                        <circle cx="10" cy="19" r="3" />
+                        <path d="m9 6 6 1M7 9l2 7m7-6-4 6" />
+                    </svg>
+                    <span>Nexus Explorer</span>
+                </NavLink>
+                <NavLink class="gc-nav-link" href="nexus/alerts">
+                    <svg class="gc-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5ZM10 21h4M12 2v2" />
+                    </svg>
+                    <span>Nexus Alerts</span>
+                </NavLink>
+            </div>
+        </nav>
+
+        <div class="gc-nav-footer">Local workspace</div>
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+@code {
+    private bool _menuOpen;
+    private ElementReference _menuButton;
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column" aria-label="Primary">
-        <div class="gc-nav-section">Overview</div>
-        <div class="nav-item">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Dashboard
-            </NavLink>
-        </div>
+    private NavLinkMatch NexusMatch =>
+        Navigation.ToBaseRelativePath(Navigation.Uri).StartsWith("nexus/alerts", StringComparison.OrdinalIgnoreCase)
+            ? NavLinkMatch.All
+            : NavLinkMatch.Prefix;
 
-        <div class="gc-nav-section">Deliberation</div>
-        <div class="nav-item">
-            <NavLink class="nav-link" href="dossiers">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Dossiers
-            </NavLink>
-        </div>
-        <div class="nav-item">
-            <NavLink class="nav-link" href="assessments">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Assessments
-            </NavLink>
-        </div>
+    protected override void OnInitialized() =>
+        Navigation.LocationChanged += HandleLocationChanged;
 
-        <div class="gc-nav-section">Intelligence</div>
-        <div class="nav-item">
-            <NavLink class="nav-link" href="nexus">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Nexus Explorer
-            </NavLink>
-        </div>
-        <div class="nav-item">
-            <NavLink class="nav-link" href="nexus/alerts">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Nexus Alerts
-            </NavLink>
-        </div>
-    </nav>
-</div>
+    private void HandleLocationChanged(object? sender, LocationChangedEventArgs args) =>
+        _ = InvokeAsync(() =>
+        {
+            _menuOpen = false;
+            StateHasChanged();
+        });
 
+    private void ToggleMenu() => _menuOpen = !_menuOpen;
+
+    private void CloseMenu() => _menuOpen = false;
+
+    private async Task HandleNavigationKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape" && _menuOpen)
+        {
+            _menuOpen = false;
+            await _menuButton.FocusAsync();
+        }
+    }
+
+    public void Dispose() =>
+        Navigation.LocationChanged -= HandleLocationChanged;
+}

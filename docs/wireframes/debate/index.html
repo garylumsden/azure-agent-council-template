@@ -1,0 +1,89 @@
+<!doctype html>
+<!--
+THESIS: Follow a council without chasing a vertically stacked chamber and transcript.
+OWN-WORLD: Incumbent navy, Segoe UI, blue actions, gold live states; flat work surfaces, not glowing cards.
+STORY: Compare five arrangements of one synthetic debate. Read responses, inspect bids, and return to the live position.
+FIRST VIEWPORT: Layout switcher, dossier heading, persistent Moderator, flexible response workspace, raised-hand shelf, simulation transport.
+FORM: Response-by-response stage, candidate 7, seed 6439cdcf; four additional arrangements explicitly requested by the user.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Five interactive Agent Council debate wireframes. Synthetic data only.">
+  <title>Agent Council | Debate design lab</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+  <script src="fixture.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Skip to debate</a>
+  <div class="app">
+    <header class="lab-bar">
+      <a class="lab-brand" href="./" aria-label="Reset the design lab"><span class="brand-mark" aria-hidden="true">C</span> Design lab <span class="prototype-label">Interactive wireframes</span></a>
+      <span class="idea-position" id="idea-position">Idea 2 of 5</span>
+      <nav class="concept-switcher" aria-label="Wireframe idea">
+        <button data-action="layout" data-value="desk" aria-pressed="false"><span>1</span> Live desk</button>
+        <button data-action="layout" data-value="stage" aria-pressed="true"><span>2</span> Focus stage</button>
+        <button data-action="layout" data-value="lanes" aria-pressed="false"><span>3</span> Conversation lanes</button>
+        <button data-action="layout" data-value="split" aria-pressed="false"><span>4</span> Split review</button>
+        <button data-action="layout" data-value="timeline" aria-pressed="false"><span>5</span> Event timeline</button>
+      </nav>
+      <button class="quiet-button help-button" data-action="help">How to try</button>
+    </header>
+
+    <section class="session-header" aria-label="Deliberation">
+      <div class="session-title">
+        <div class="session-path">Agent Council <span aria-hidden="true">/</span> Dossier review <span class="synthetic">Synthetic demo</span></div>
+        <h1>Shared knowledge pilot</h1>
+      </div>
+      <div class="session-actions">
+        <span class="session-state" id="session-state"></span>
+        <button class="secondary-button" data-action="document" aria-controls="inspector">View dossier <span aria-hidden="true">&#8599;</span></button>
+      </div>
+    </section>
+
+    <section class="moderator-strip" aria-label="Current moderator announcement">
+      <span class="moderator-icon" aria-hidden="true">M</span>
+      <div class="moderator-copy"><strong>Moderator</strong><p id="moderator-message"></p></div>
+      <div class="round-indicator" id="round-indicator"></div>
+      <button class="quiet-button" data-action="announcements" aria-controls="inspector">History <span aria-hidden="true">&#8599;</span></button>
+    </section>
+
+    <div class="workspace-heading">
+      <div><h2 id="concept-name">Focus stage</h2><p id="concept-description">One response at a time. Built for presenting.</p></div>
+      <div class="workspace-tools">
+        <button class="quiet-button" data-action="positions" aria-controls="inspector">Initial positions</button>
+        <button class="follow-button" data-action="follow" id="follow-button"></button>
+      </div>
+    </div>
+
+    <div class="workspace-region">
+      <main id="workspace" class="workspace" tabindex="-1" aria-label="Debate workspace"></main>
+      <aside class="inspector" id="inspector" aria-label="Detail panel" hidden>
+        <div class="inspector-header"><h2 id="inspector-title"></h2><button class="icon-button" data-action="close" aria-label="Close detail panel">&#10005;</button></div>
+        <div id="inspector-content" class="inspector-content"></div>
+      </aside>
+    </div>
+
+    <section class="hand-shelf" aria-label="Live raised hands">
+      <div class="shelf-heading"><h2>Raised hands <span id="hand-count"></span></h2><span id="hands-description">Reasons are visible. The Moderator chooses who speaks.</span><span class="mobile-hands-hint">Swipe to see each reason &#8594;</span></div>
+      <div class="hands" id="hands"></div>
+    </section>
+
+    <footer class="transport" aria-label="Prototype simulation controls">
+      <div class="simulation-label"><span class="demo-dot" aria-hidden="true"></span><strong>Simulation</strong><span>No live agents</span></div>
+      <button class="play-button" data-action="play" id="play-button">Play demo</button>
+      <button class="icon-button" data-action="previous" aria-label="Previous simulated event" title="Previous simulated event">&#8592;</button>
+      <div class="scrubber"><label for="event-range" id="event-label">Event</label><input id="event-range" type="range" min="0" max="9" value="4" aria-label="Simulated event"></div>
+      <button class="secondary-button next-button" data-action="next" id="next-button">Next event <span aria-hidden="true">&#8594;</span></button>
+      <button class="quiet-button reset-button" data-action="reset">Restart</button>
+      <button class="quiet-button" data-action="options" aria-controls="inspector" aria-label="Open simulation scenarios">Scenarios</button>
+    </footer>
+  </div>
+  <div id="status-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>

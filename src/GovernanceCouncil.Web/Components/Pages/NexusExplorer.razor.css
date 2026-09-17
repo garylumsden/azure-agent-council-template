@@ -1,0 +1,27 @@
+.nexus-explorer-page { min-width: 0; }
+.nexus-map { margin-bottom: 2rem; }
+.nexus-graph { width: 100%; min-width: 0; overflow: hidden; background: var(--gc-bg-elevated); padding: 0; }
+.nexus-map-notice { margin-top: .75rem; }
+.nexus-legend { display: flex; flex-wrap: wrap; gap: .35rem 1.25rem; list-style: none; padding: 0; margin: .75rem 0 0; font-size: .8rem; color: var(--gc-text-muted); }
+.nexus-legend li { display: inline-flex; align-items: center; gap: .4rem; }
+.nexus-results { scroll-margin-top: 1rem; }
+.nexus-filters { align-items: flex-end; flex-wrap: wrap; gap: .75rem 1rem; margin-bottom: 1rem; }
+.nexus-type-filter { display: grid; gap: .35rem; min-width: 12rem; }
+.nexus-type-filter label { font-size: .85rem; font-weight: 600; }
+.nexus-selected-filter { overflow-wrap: anywhere; min-width: 0; flex: 1; align-self: center; }
+.nexus-list { list-style: none; margin: 0; padding: 0; }
+.nexus-row { border-bottom: 0; display: block; padding: 1.25rem; }
+.nexus-row + .nexus-row { border-top: 1px solid var(--gc-border); }
+.nexus-row-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .4rem 1rem; margin-bottom: .6rem; }
+.nexus-row-heading h3 { font-size: 1rem; margin: 0; }
+.nexus-summary { max-width: 75ch; line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; margin: 0 0 1rem; }
+.nexus-row-footer { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.nexus-endpoints { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem 1.5rem; flex: 1 1 28rem; min-width: 0; margin: 0; }
+.nexus-endpoints dt { color: var(--gc-text-muted); font-size: .8rem; font-weight: 400; margin-bottom: .2rem; }
+.nexus-endpoints dd { font-size: .9rem; margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+    .nexus-row { padding: 1rem; }
+    .nexus-endpoints { grid-template-columns: minmax(0, 1fr); }
+    .nexus-type-filter { width: 100%; min-width: 0; }
+    .nexus-selected-filter { flex-basis: 100%; }
+}

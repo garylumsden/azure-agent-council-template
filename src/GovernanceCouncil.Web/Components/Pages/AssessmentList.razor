@@ -3,85 +3,140 @@
 @using GovernanceCouncil.Core.Models
 @inject IAssessmentStore AssessmentStore
 @inject INexusStore NexusStore
+@inject IJSRuntime JS
+@inject ILogger<AssessmentList> Logger
 @rendermode InteractiveServer
 
-<PageTitle>All Assessments</PageTitle>
+<PageTitle>Assessments</PageTitle>
 
-<header class="gc-page-head">
-    <span class="gc-eyebrow">Deliberation</span>
-    <h1>Assessments</h1>
-    <p class="lead">All council assessment results.</p>
-</header>
+<div class="assessment-list-page">
+    <header class="gc-page-header">
+        <div>
+            <h1 class="gc-page-title">Assessments</h1>
+            <p class="gc-page-description">Review council recommendations, member decisions, and the evidence behind them.</p>
+        </div>
+        <div class="gc-action-group">
+            <a href="/dossiers" class="btn btn-outline-secondary">Browse dossiers</a>
+        </div>
+    </header>
 
-@if (!string.IsNullOrEmpty(_message))
-{
-    <div class="gc-card gc-note mb-3">@_message</div>
-}
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <div class="gc-surface assessment-notice" role="@(_deleteFailed ? "alert" : "status")">@_message</div>
+    }
 
-@if (_assessments is null)
-{
-    <p class="text-muted">Loading…</p>
-}
-else if (!_assessments.Any())
-{
-    <div class="gc-card gc-empty">No assessments yet. <a href="/dossiers">Upload a dossier</a> and submit it for deliberation.</div>
-}
-else
-{
-    <div class="gc-card gc-grid-card">
-        <FluentDataGrid Items="@_assessments.AsQueryable()" TGridItem="Assessment" GridTemplateColumns="1fr 2.4fr 1.6fr 1.4fr 1.4fr" Class="gc-grid">
-            <TemplateColumn Title="ID">
-                <a href="/assessment/@context.AssessmentId">@context.AssessmentId</a>
-            </TemplateColumn>
-            <TemplateColumn Title="Dossier">
-                <a href="/dossier/@context.DossierId">@context.DossierTitle</a>
-            </TemplateColumn>
-            <TemplateColumn Title="Recommendation">
-                <span class="gc-pill @UiStyles.StanceClass(context.OverallRecommendation)">@context.OverallRecommendation</span>
-            </TemplateColumn>
-            <TemplateColumn Title="Date">
-                <span class="text-muted">@context.ReviewDate.ToString("dd MMM yyyy HH:mm")</span>
-            </TemplateColumn>
-            <TemplateColumn Title="Actions" Align="Align.End">
-                <FluentAnchor Href="@($"/assessment/{context.AssessmentId}")" Appearance="Appearance.Accent">View</FluentAnchor>
-                <FluentButton Appearance="Appearance.Stealth" OnClick="@(() => DeleteAssessment(context.AssessmentId))">Delete</FluentButton>
-            </TemplateColumn>
-        </FluentDataGrid>
-    </div>
-}
+    @if (_loadFailed)
+    {
+        <div class="gc-empty-state" role="alert">
+            <h2>Assessments could not be loaded</h2>
+            <p>Your assessment records have not been changed. Try loading the list again.</p>
+            <button type="button" class="btn btn-outline-secondary" @onclick="LoadAssessmentsAsync">Try again</button>
+        </div>
+    }
+    else if (_assessments is null)
+    {
+        <p class="gc-meta" role="status">Loading assessments…</p>
+    }
+    else if (!_assessments.Any())
+    {
+        <div class="gc-empty-state">
+            <h2>No assessments yet</h2>
+            <p>Upload a dossier and submit it for deliberation to create an assessment.</p>
+            <a href="/dossiers" class="btn btn-primary">Upload a dossier</a>
+        </div>
+    }
+    else
+    {
+        <div class="gc-section-header">
+            <h2>Assessment results</h2>
+            <span class="gc-meta">Most recent first</span>
+        </div>
+        <ul class="gc-surface assessment-list" aria-label="Assessment results" aria-busy="@(_deletingId is not null)">
+            @foreach (var assessment in _assessments)
+            {
+                <li class="gc-list-row assessment-row" @key="assessment.AssessmentId">
+                    <div class="assessment-record">
+                        <h3><a href="/assessment/@assessment.AssessmentId">@assessment.DossierTitle</a></h3>
+                        <div class="gc-meta assessment-record-meta">
+                            <span>Assessment @assessment.AssessmentId</span>
+                            <span>Reviewed @assessment.ReviewDate.ToString("dd MMM yyyy HH:mm")</span>
+                            <a href="/dossier/@assessment.DossierId" aria-label="@($"View dossier: {assessment.DossierTitle}")">View dossier</a>
+                        </div>
+                    </div>
+                    <div class="assessment-recommendation">
+                        <span class="gc-meta">Recommendation</span>
+                        <span class="gc-pill @UiStyles.StanceClass(assessment.OverallRecommendation)">@assessment.OverallRecommendation</span>
+                    </div>
+                    <div class="gc-action-group assessment-actions">
+                        <a href="/assessment/@assessment.AssessmentId" class="btn btn-sm btn-outline-secondary" aria-label="@($"Review assessment {assessment.AssessmentId}")">Review</a>
+                        <button type="button" class="btn btn-sm btn-outline-danger" disabled="@(_deletingId is not null)"
+                                aria-label="@($"Delete assessment {assessment.AssessmentId} and its associated nexuses")"
+                                @onclick="() => DeleteAssessment(assessment.AssessmentId)">
+                            @(_deletingId == assessment.AssessmentId ? "Deleting…" : "Delete")
+                        </button>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>
 
 @code {
     private IReadOnlyList<Assessment>? _assessments;
     private string _message = "";
+    private bool _loadFailed;
+    private bool _deleteFailed;
+    private string? _deletingId;
 
-    protected override async Task OnInitializedAsync()
-    {
-        var all = await AssessmentStore.ListAsync();
-        _assessments = all.OrderByDescending(a => a.ReviewDate).ToList();
-    }
+    protected override Task OnInitializedAsync() => LoadAssessmentsAsync();
 
-    private async Task DeleteAssessment(string assessmentId)
+    private async Task LoadAssessmentsAsync()
     {
-        _message = "";
+        _loadFailed = false;
+        _assessments = null;
         try
         {
-            // Delete all nexuses where this assessment is source or target
-            var nexuses = await NexusStore.ListForAssessmentAsync(assessmentId);
-            foreach (var n in nexuses)
-                await NexusStore.DeleteAsync(n.Id, n.SourceAssessmentId);
-
-            // Delete the assessment
-            await AssessmentStore.DeleteAsync(assessmentId);
-
-            _message = $"Deleted assessment {assessmentId} and {nexuses.Count} associated nexuses.";
             var all = await AssessmentStore.ListAsync();
             _assessments = all.OrderByDescending(a => a.ReviewDate).ToList();
         }
         catch (Exception ex)
         {
-            _message = $"❌ Delete failed: {ex.Message}";
+            Logger.LogError(ex, "Failed to load assessments");
+            _loadFailed = true;
         }
     }
 
-    private static string RecommendationBadge(string rec) => UiStyles.StanceClass(rec);
+    private async Task DeleteAssessment(string assessmentId)
+    {
+        if (_deletingId is not null) return;
+        _message = "";
+        _deleteFailed = false;
+        _deletingId = assessmentId;
+        try
+        {
+            var confirmed = await JS.InvokeAsync<bool>("confirm",
+                $"Delete assessment {assessmentId} and all associated nexuses? This cannot be undone.");
+            if (!confirmed) return;
+
+            // Delete all nexuses where this assessment is source or target.
+            var nexuses = await NexusStore.ListForAssessmentAsync(assessmentId);
+            foreach (var n in nexuses)
+                await NexusStore.DeleteAsync(n.Id, n.SourceAssessmentId);
+
+            await AssessmentStore.DeleteAsync(assessmentId);
+
+            _message = $"Deleted assessment {assessmentId} and {nexuses.Count} associated nexuses.";
+            await LoadAssessmentsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to delete assessment {AssessmentId}", assessmentId);
+            _deleteFailed = true;
+            _message = "Deletion could not be completed. Refresh the list to check the assessment and its associated nexuses before trying again.";
+        }
+        finally
+        {
+            _deletingId = null;
+        }
+    }
 }

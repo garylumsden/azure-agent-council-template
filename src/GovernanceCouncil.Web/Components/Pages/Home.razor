@@ -5,82 +5,81 @@
 @inject IDossierStore DossierStore
 @inject INexusStore NexusStore
 
-<PageTitle>@Brand.AppName — Dashboard</PageTitle>
+<PageTitle>@Brand.AppName — Home</PageTitle>
 
-<header class="gc-page-head">
-    @if (Brand.HasOrganisation)
-    {
-        <span class="gc-eyebrow">@Brand.Organisation</span>
-    }
-    <h1>@Brand.AppName</h1>
-    <p class="lead">@Brand.Tagline</p>
-</header>
-
-<div class="gc-foundry">
-    <span class="gc-foundry-label">🔗 Foundry</span>
-    <a href="@_foundryPortalUrl" target="_blank">Azure Portal →</a>
-    <a href="http://localhost:4319" target="_blank">Local Playground →</a>
-    <span class="gc-foundry-meta">Agents · traces · evaluations</span>
-</div>
-
-<div class="gc-bento">
-    <a class="gc-card gc-stat" href="/dossiers">
-        <span class="gc-eyebrow">Dossiers</span>
-        <span class="gc-stat-num">@_documentCount</span>
-        <span class="gc-stat-cta">View all →</span>
-    </a>
-    <a class="gc-card gc-stat" href="/assessments">
-        <span class="gc-eyebrow">Assessments</span>
-        <span class="gc-stat-num">@_assessmentCount</span>
-        <span class="gc-stat-cta">View all →</span>
-    </a>
-    <a class="gc-card gc-stat" href="/nexus">
-        <span class="gc-eyebrow">Nexus Alerts</span>
-        <span class="gc-stat-num">@_nexusCount</span>
-        <span class="gc-stat-cta gc-stat-cta--gold">Explore →</span>
-    </a>
-</div>
-
-<section class="gc-section">
-    <div class="gc-section-head">
-        <h2>Recent assessments</h2>
-        <a href="/assessments">All assessments →</a>
-    </div>
-    @if (_recentAssessments is null)
-    {
-        <p class="text-muted">Loading…</p>
-    }
-    else if (!_recentAssessments.Any())
-    {
-        <div class="gc-card gc-empty">
-            No assessments yet. <a href="/dossiers">Upload a dossier</a> to get started.
+<div class="home-page">
+    <header class="gc-page-header">
+        <div>
+            <h1 class="gc-page-title">@Brand.AppName</h1>
+            <p class="gc-page-description">@Brand.Tagline</p>
+            @if (Brand.HasOrganisation)
+            {
+                <p class="gc-meta home-organisation">@Brand.Organisation</p>
+            }
         </div>
-    }
-    else
-    {
-        <div class="gc-card gc-grid-card">
-            <FluentDataGrid Items="@_recentAssessments.AsQueryable()" TGridItem="Assessment" GridTemplateColumns="1fr 2.6fr 1.6fr 1.2fr" Class="gc-grid">
-                <TemplateColumn Title="ID">
-                    <a href="/assessment/@context.AssessmentId">@context.AssessmentId</a>
-                </TemplateColumn>
-                <TemplateColumn Title="Dossier">
-                    <a href="/dossier/@context.DossierId">@context.DossierTitle</a>
-                </TemplateColumn>
-                <TemplateColumn Title="Recommendation">
-                    <span class="gc-pill @UiStyles.StanceClass(context.OverallRecommendation)">@context.OverallRecommendation</span>
-                </TemplateColumn>
-                <TemplateColumn Title="Date">
-                    <span class="text-muted">@context.ReviewDate.ToString("dd MMM yyyy")</span>
-                </TemplateColumn>
-            </FluentDataGrid>
+        <div class="gc-action-group">
+            <FluentAnchor Href="/dossiers" Appearance="Appearance.Accent">Choose a dossier</FluentAnchor>
         </div>
-    }
-</section>
+    </header>
+
+    <nav class="gc-toolbar home-shortcuts" aria-label="Explore council records">
+        <a href="/dossiers">Dossiers <span class="home-count">@(_documentCount?.ToString() ?? "…")</span></a>
+        <a href="/assessments">Assessments <span class="home-count">@(_assessmentCount?.ToString() ?? "…")</span></a>
+        <a href="/nexus">Nexus alerts <span class="home-count">@(_nexusCount?.ToString() ?? "…")</span></a>
+    </nav>
+
+    <section class="home-recent" aria-labelledby="recent-assessments-heading">
+        <div class="gc-section-header">
+            <div>
+                <h2 id="recent-assessments-heading">Recent assessments</h2>
+                <p class="gc-meta">Review council recommendations or open the dossier behind an assessment.</p>
+            </div>
+            <a href="/assessments">All assessments →</a>
+        </div>
+        @if (_recentAssessments is null)
+        {
+            <div class="gc-empty-state" role="status" aria-live="polite">Loading recent assessments…</div>
+        }
+        else if (!_recentAssessments.Any())
+        {
+            <div class="gc-empty-state gc-surface">
+                <h3>No assessments yet</h3>
+                <p>Choose a dossier from the library, or upload one, to start a council deliberation.</p>
+                <FluentAnchor Href="/dossiers" Appearance="Appearance.Accent">Open dossier library</FluentAnchor>
+            </div>
+        }
+        else
+        {
+            <ul class="gc-surface home-assessment-list">
+                @foreach (var assessment in _recentAssessments)
+                {
+                    <li class="gc-list-row home-assessment" @key="assessment.AssessmentId">
+                        <div class="home-assessment-main">
+                            <h3><a href="/dossier/@assessment.DossierId">@assessment.DossierTitle</a></h3>
+                            <a class="home-assessment-link" href="/assessment/@assessment.AssessmentId">Assessment @assessment.AssessmentId →</a>
+                        </div>
+                        <div class="home-assessment-result">
+                            <span class="gc-pill @UiStyles.StanceClass(assessment.OverallRecommendation)">@assessment.OverallRecommendation</span>
+                            <time class="gc-meta" datetime="@assessment.ReviewDate.ToString("yyyy-MM-dd")">@assessment.ReviewDate.ToString("dd MMM yyyy")</time>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+
+    <footer class="home-tools gc-toolbar" aria-label="Foundry tools">
+        <span class="home-tools-label">Foundry tools</span>
+        <a href="@_foundryPortalUrl" target="_blank" rel="noopener noreferrer">Foundry portal ↗</a>
+        <a href="http://localhost:4319" target="_blank" rel="noopener noreferrer">Local playground ↗</a>
+        <span class="gc-meta">Agents · traces · evaluations</span>
+    </footer>
+</div>
 
 @code {
-    private int _assessmentCount;
-    private int _documentCount;
-    private int _nexusCount;
+    private int? _assessmentCount;
+    private int? _documentCount;
+    private int? _nexusCount;
     private IReadOnlyList<Assessment>? _recentAssessments;
     private string _foundryPortalUrl = "";
 

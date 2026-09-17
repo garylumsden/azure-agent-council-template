@@ -1,0 +1,211 @@
+.dossier-library {
+    min-width: 0;
+}
+
+.upload-panel {
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.upload-panel[hidden] {
+    display: none;
+}
+
+.upload-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto;
+    align-items: start;
+    gap: 1rem;
+}
+
+.library-field {
+    min-width: 0;
+}
+
+.library-field > label {
+    display: block;
+    margin-bottom: .35rem;
+    font-size: .875rem;
+    font-weight: 600;
+}
+
+.library-field ::deep fluent-text-field,
+.library-field ::deep fluent-select {
+    width: 100%;
+    min-width: 0;
+}
+
+.library-field ::deep input[type="file"] {
+    width: 100%;
+    min-width: 0;
+    font-size: .875rem;
+}
+
+.field-help {
+    display: block;
+    margin: .4rem 0 0;
+    font-size: .8rem;
+    line-height: 1.5;
+}
+
+.upload-action {
+    padding-top: 1.7rem;
+}
+
+.library-setup {
+    margin-bottom: 1.5rem;
+    padding-inline: .75rem;
+}
+
+.library-setup ::deep fluent-accordion-item {
+    border: 0;
+}
+
+.settings-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .35rem 1rem;
+    text-align: left;
+    padding-block: .25rem;
+    padding-right: .5rem;
+    overflow-wrap: anywhere;
+}
+
+.settings-title {
+    color: var(--gc-text);
+    font-size: .95rem;
+    font-weight: 600;
+}
+
+.settings-summary .gc-meta {
+    display: inline;
+    font-size: .8rem;
+    font-weight: 400;
+}
+
+.settings-content {
+    padding: .75rem .25rem 1rem;
+}
+
+.settings-fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.settings-apply {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem 1.25rem;
+    margin-top: 1rem;
+}
+
+.settings-apply ::deep fluent-button {
+    flex-shrink: 0;
+}
+
+.settings-apply p,
+.safety-help p {
+    display: block;
+    margin: 0;
+    max-width: 74ch;
+    font-size: .85rem;
+    line-height: 1.6;
+}
+
+.settings-apply strong {
+    color: var(--gc-text);
+}
+
+.safety-settings {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr);
+    align-items: start;
+    gap: 1rem;
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--gc-border);
+}
+
+.safety-help p + p {
+    margin-top: .35rem;
+}
+
+.dossier-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.dossier-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    padding: 1rem 1.25rem;
+}
+
+.dossier-summary {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.dossier-summary h3 {
+    margin: 0 0 .4rem;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.dossier-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .4rem 1rem;
+}
+
+.dossier-actions {
+    flex-shrink: 0;
+}
+
+@media (max-width: 960px) {
+    .upload-fields {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .upload-action {
+        grid-column: 1 / -1;
+        padding-top: 0;
+    }
+
+    .dossier-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 640px) {
+    .upload-panel,
+    .dossier-row {
+        padding: 1rem;
+    }
+
+    .upload-fields,
+    .settings-fields,
+    .safety-settings {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .settings-apply {
+        flex-direction: column;
+    }
+
+    .settings-active {
+        flex-basis: 100%;
+    }
+
+    .dossier-actions {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+}

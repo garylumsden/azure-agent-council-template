@@ -1,101 +1,118 @@
-# DESIGN.md — Agent Council
+# Agent Council design system
 
-> Design system authored via the **gem-designer** method (create / design_system).
-> Constraints: **dark-only**, **Fluent UI Blazor**, **WCAG 2.1 AA**, responsive.
-> One memorable thing: **"Parliament at night"** — a calm, authoritative navy console that frames
-> the live debate chamber as a broadcast centrepiece.
+The UI uses a shared navy theme, Segoe UI, and Fluent UI Blazor controls.
+The refresh uses the Impeccable design process by Paul Bakaus: <https://impeccable.style>.
+It retains the original palette and replaces decorative chamber geometry with readable workspaces.
 
-## 1. Visual Theme
-- **Direction:** restrained *broadcast / mission-control*. Calm deep-navy surfaces, luminous blue
-  accent, a single gold "on-air" highlight reserved for live/active states. Authority over flash.
-- **Mood:** governmental credibility + live-event tension. Quiet by default; the chamber is the drama.
-- **Foundation:** Fluent UI Blazor components themed via `FluentDesignTheme` (dark) + our token layer.
+## Overview
 
-## 2. Color Palette (60-30-10, dark)
-CSS variables (in `wwwroot/app.css`, applied under `:root`; app is always dark):
-```
-/* 60% — backgrounds */
---gc-bg:            #070d1c;  /* app base (deepest navy) */
---gc-bg-elevated:   #0d1830;  /* raised regions / header / nav */
---gc-surface:       #14213f;  /* cards, panels */
---gc-surface-2:     #1b2a4a;  /* nested / hover surface */
-/* 30% — structure */
---gc-border:        #25345c;  /* hairline borders */
---gc-border-strong: #3a4d7e;  /* emphasised borders */
---gc-text:          #e8eefc;  /* primary text   (~15:1 on --gc-bg) */
---gc-text-muted:    #9fb2d6;  /* secondary      (~7:1) */
---gc-text-soft:     #7f93b8;  /* tertiary/labels (~4.7:1, AA) */
-/* 10% — accent + semantics */
---gc-accent:        #6ea8fe;  /* primary action / links (~8:1) */
---gc-accent-hover:  #8cbcff;
---gc-accent-soft:   rgba(110,168,254,0.14);
---gc-gold:          #f4c542;  /* ON-AIR / live / active round only */
---gc-success:       #3ddc97;  /* Support / Approve */
---gc-info:          #6ea8fe;  /* Support w/ Conditions */
---gc-danger:        #ff6b6b;  /* Oppose / Reject */
---gc-warning:       #f4c542;  /* Defer */
---gc-neutral:       #98a2b3;  /* Abstain */
-```
-Map onto Fluent: `FluentDesignTheme` Mode=Dark, accent base ← `--gc-accent`, neutral base tuned to the
-navy ramp; never use default Fluent purple/teal.
+The primary debate audience is a presenter and an audience following an autonomous council.
+Readers must see the current moderator announcement, raised hands, and responses without scrolling the whole page.
+The user selected **Live desk** and **Focus stage**.
+Conversation lanes, Split review, and the standalone Event timeline layout were rejected.
+A compact moderator timeline belongs in both selected layouts.
 
-## 3. Typography
-- **Family:** `"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif` (Microsoft-native, Fluent
-  aligned). Display: `"Segoe UI Variable Display"` 600. Mono: `Consolas,"Courier New",monospace`.
-- **Scale (1.250 major-third, 8pt rhythm):**
-  display 2.0rem/700 · h1 1.6rem/600 · h2 1.3rem/600 · h3 1.1rem/600 · body 0.95rem/400 ·
-  small 0.825rem/400 · eyebrow 0.72rem/700 (uppercase, letter-spacing .08em, `--gc-text-soft`).
-- Line-height: body 1.6, headings 1.2. Max prose width ~72ch.
+The rest of the app uses consistent page headers, primary actions, toolbars, lists, and empty states.
+Scenario configuration remains the source of branding, member names, roles, and roster size.
 
-## 4. Component Stylings
-- **Card** (`.gc-card`): `--gc-surface`, radius 16px, border `--gc-border`, `--elev-1`. Optional eyebrow
-  + title. Hover → `--gc-surface-2` + `--elev-2`.
-- **Stat tile** (`.gc-stat`): big display number, eyebrow label, optional trend; dashboard bento.
-- **Button:** Fluent `Appearance.Accent` (primary), `Neutral` (secondary), `Stealth` (tertiary).
-  44px min height. Focus ring 2px `--gc-accent` offset.
-- **Stance / status pill** (`.gc-pill`): radius 999px, bg `color/14%` + solid text color, per semantic
-  (support/conditions/oppose/abstain/defer/approve/reject). Replaces `bg-info text-dark`.
-- **DataGrid** (`FluentDataGrid`): zebra `--gc-surface`/transparent, eyebrow header row, hover
-  `--gc-surface-2`, links `--gc-accent`.
-- **Nav** (`FluentNavMenu`): vertical rail on `--gc-bg-elevated`; active = `--gc-accent-soft` + left
-  border `--gc-accent`; Fluent icons.
-- **Prose** (`.prose`): re-point existing colors to tokens.
-- **Chamber** (`debate.css`): keep radial navy stage; re-point hard-coded hexes to tokens; gold for
-  round pill + active speaker mic; "ON AIR" stays `--gc-danger` red.
+## Colors
 
-## 5. Layout Principles
-- **Shell:** fixed left nav rail (240px ≥ md; collapsible drawer < md) + sticky top header (breadcrumbs
-  + context actions) over a scrollable content well (max-width 1200px, 32px gutters).
-- **Grid:** 12-col responsive; dashboard uses a **bento** of stat tiles + recent list.
-- **8pt spacing** scale: 4/8/12/16/24/32/48. Section rhythm 32px.
+Use the `--gc-*` properties from `wwwroot/app.css`.
 
-## 6. Depth & Elevation (dark = glow, not shadow)
-```
---elev-0: none;
---elev-1: 0 1px 2px rgba(0,0,0,.4), 0 0 0 1px var(--gc-border);
---elev-2: 0 6px 20px rgba(0,0,0,.45), 0 0 0 1px var(--gc-border);
---elev-3: 0 14px 40px rgba(0,0,0,.5), 0 0 0 1px var(--gc-border-strong);
---glow-accent: 0 0 0 1px rgba(110,168,254,.4), 0 0 18px rgba(110,168,254,.25);
---glow-live:   0 0 0 1px rgba(244,197,66,.5), 0 0 22px rgba(244,197,66,.3);
-```
+| Token | Value | Purpose |
+|---|---|---|
+| `--gc-bg` | `#070d1c` | Page background |
+| `--gc-bg-elevated` | `#0d1830` | Navigation and secondary regions |
+| `--gc-surface` | `#14213f` | Work surfaces |
+| `--gc-surface-2` | `#1b2a4a` | Hover and nested regions |
+| `--gc-border` | `#25345c` | Surface boundaries |
+| `--gc-border-strong` | `#3a4d7e` | Emphasised boundaries |
+| `--gc-text` | `#e8eefc` | Primary text |
+| `--gc-text-muted` | `#9fb2d6` | Supporting text |
+| `--gc-text-soft` | `#94a9cc` | Metadata |
+| `--gc-accent` | `#6ea8fe` | Actions and selection |
+| `--gc-accent-hover` | `#8cbcff` | Action hover |
+| `--gc-gold` | `#f4c542` | Live state and warnings |
+| `--gc-success` | `#3ddc97` | Support and approval |
+| `--gc-danger` | `#ff6b6b` | Opposition and errors |
+| `--gc-neutral` | `#98a2b3` | Neutral status |
 
-## 7. Do's / Don'ts
-- ✅ Navy surfaces, one luminous-blue accent, gold ONLY for live/active.
-- ✅ Eyebrow labels, generous spacing, glow elevation, Fluent components themed by token.
-- ✅ WCAG AA text (≥4.5:1) and focus rings everywhere; honour `prefers-reduced-motion`.
-- ❌ No Bootstrap `bg-light/bg-white/text-dark`; no second accent hue; no purple/teal "AI" gradients.
-- ❌ No heavy drop shadows, no glassmorphism overload, no hardcoded hex in components (tokens only).
+Pair status colors with explicit labels. Do not use color alone to communicate a state.
+Persona colors remain derived from configuration identities.
 
-## 8. Responsive Behavior
-- **≥1200:** full bento + nav rail. **768–1199:** nav rail, single-column content, tiles 2-up.
-- **<768:** nav becomes top drawer, tiles stack, chamber scales seats, tables → stacked/scroll. Touch
-  targets ≥44px. No horizontal body scroll.
+## Typography
 
-## 9. Agent Prompt Guide (implementation rules)
-1. Theme via `FluentDesignTheme Mode="Dark"`; colors come from `--gc-*` tokens — **never** hardcode hex
-   in razor/scoped css.
-2. Prefer Fluent components over raw HTML/Bootstrap; keep Bootstrap grid only transitionally.
-3. Reuse shared classes: `.gc-card`, `.gc-pill`, `.gc-eyebrow`, `.gc-stat`, `.prose`.
-4. Every interactive element: visible focus ring + ARIA label; every icon: `aria-hidden` or alt.
-5. Preserve all behaviour, SignalR, data bindings — presentation only.
-6. Build (`dotnet build`) after each page; keep 0 warnings / 0 errors.
+Use `"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif` for text.
+Use the matching display family for headings.
+Reserve monospace for source code and structured data.
+
+| Role | Size / line height |
+|---|---|
+| Body | `.9375rem / 1.6` |
+| Page title | `clamp(1.5rem, 1.2rem + .65vw, 1.875rem)` |
+| Section heading | `1.25rem` |
+| Subsection heading | `1.0625rem` |
+| Small heading | `1rem` |
+| Button | `.875rem` |
+| Metadata | `.8125rem` |
+| Badge | `.75rem` |
+| Document prose | `.9375rem / 1.75` |
+
+Use clear heading levels. Do not add decorative labels above headings.
+Keep long response and document text within a readable measure.
+
+## Layout
+
+- The desktop navigation rail is `220px` wide.
+- Below `960px`, use the mobile navigation menu.
+- Standard content has a maximum width of `1440px`.
+- Standard padding is `clamp(1.25rem, 3vw, 2.5rem)`.
+- The live debate uses the remaining viewport instead of the standard scrolling page.
+- Live desk places the roster, selected response, and moderator timeline in separate regions.
+- Focus stage enlarges the response while retaining access to the moderator timeline.
+- Keep moderator announcements and raised hands outside the response scroll region.
+- Keep dossier and member inspectors inside the debate workspace.
+- Adapt panels structurally on narrow screens. Do not create horizontal body scrolling.
+
+## Elevation & Depth
+
+Use surface color and borders to separate regions.
+`--elev-0`, `--elev-1`, `--elev-2`, `--glow-accent`, and `--glow-live` are `none`.
+`--elev-3` is `0 16px 40px rgba(0,0,0,.35)` for overlays.
+Do not restore glowing cards or the radial hemicycle.
+
+## Shapes
+
+The standard radius is `6px`. The surface radius is `8px`.
+Use consistent control shapes and restrained borders.
+Do not make noninteractive cards appear clickable.
+
+## Components
+
+Shared helpers:
+`gc-page-header`, `gc-page-title`, `gc-page-description`, `gc-toolbar`,
+`gc-section-header`, `gc-empty-state`, `gc-surface`, `gc-list-row`, `gc-meta`,
+and `gc-action-group`.
+
+Keep existing `gc-card`, `gc-pill`, `gc-stat`, and `prose` helpers compatible.
+Use Fluent controls where their existing bindings support the task.
+Preserve visible focus indicators, accessible labels, and readable loading, error, and empty states.
+
+The debate layout switch changes presentation only.
+Keep stable response identities and the user's reading selection when events arrive.
+Scroll automatically only when the reader is following the latest content.
+Provide an explicit return-to-live action.
+
+The moderator timeline shows received calls, bids, selections, and the supplied selection reasons.
+Show local receipt times and rounds. Do not label this timeline as a durable audit log.
+Reloading clears its entries. Reconnecting does not replay missed events.
+
+## Do's and Don'ts
+
+- Keep content, controls, and errors scenario-neutral.
+- Keep complete assessments, dissent, risks, sources, and minutes accessible.
+- Preserve confirmation before deletion or account-wide safety changes.
+- Keep initial positions distinct from final votes.
+- Support keyboard navigation and reduced motion.
+- Do not add simulation controls to the production app.
+- Do not add remote hosting, authentication changes, or new Azure calls as part of visual work.

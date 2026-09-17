@@ -1,0 +1,23 @@
+.nexus-detail-page { min-width: 0; }
+.nexus-breadcrumb { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; color: var(--gc-text-muted); font-size: .85rem; }
+.nexus-record-meta { display: flex; flex-wrap: wrap; gap: .75rem 2rem; padding-bottom: 1rem; margin: 0; border-bottom: 1px solid var(--gc-border); }
+.nexus-record-meta dt { font-weight: 400; margin-bottom: .2rem; }
+.nexus-record-meta dd { color: var(--gc-text); margin: 0; overflow-wrap: anywhere; }
+.nexus-section { margin-top: 2rem; }
+.nexus-narrative { max-width: 75ch; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
+.nexus-assessments { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.nexus-assessment { padding: 1.25rem; overflow-wrap: anywhere; }
+.nexus-assessment + .nexus-assessment { border-left: 1px solid var(--gc-border); }
+.nexus-assessment h3, .nexus-excerpts h4 { font-size: .85rem; color: var(--gc-text-muted); margin: 0 0 .6rem; }
+.nexus-assessment-title { font-size: 1rem; font-weight: 600; line-height: 1.5; margin: 0 0 .5rem; }
+.nexus-point { border-bottom: 0; display: block; padding: 1.25rem; }
+.nexus-point + .nexus-point { border-top: 1px solid var(--gc-border); }
+.nexus-point h3 .gc-meta { display: inline; }
+.nexus-point h3 { margin: 0 0 1.25rem; font-size: 1rem; line-height: 1.5; overflow-wrap: anywhere; }
+.nexus-excerpts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+.nexus-excerpts blockquote { margin: 0; padding: 0; max-width: 75ch; line-height: 1.7; font-size: .95rem; white-space: pre-line; overflow-wrap: anywhere; }
+@media (max-width: 720px) {
+    .nexus-assessments, .nexus-excerpts { grid-template-columns: minmax(0, 1fr); }
+    .nexus-assessment + .nexus-assessment { border-left: 0; border-top: 1px solid var(--gc-border); }
+    .nexus-assessment, .nexus-point { padding: 1rem; }
+}

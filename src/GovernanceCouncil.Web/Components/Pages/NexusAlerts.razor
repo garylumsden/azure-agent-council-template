@@ -2,64 +2,99 @@
 @using GovernanceCouncil.Core.Interfaces
 @using GovernanceCouncil.Core.Models
 @inject INexusStore NexusStore
+@inject ILogger<NexusAlerts> Logger
 
 <PageTitle>Nexus Alerts</PageTitle>
 
-<header class="gc-page-head">
-    <span class="gc-eyebrow">Intelligence</span>
-    <h1>Nexus Alerts</h1>
-    <p class="lead">Recently discovered nexuses (last 30 days).</p>
-</header>
+<div class="nexus-alerts-page">
+    <header class="gc-page-header">
+        <div>
+            <h1 class="gc-page-title">Nexus alerts</h1>
+            <p class="gc-page-description">Review connections discovered between assessments in the last 30 days.</p>
+        </div>
+        <div class="gc-action-group">
+            <a href="/nexus" class="btn btn-outline-secondary">Back to explorer</a>
+        </div>
+    </header>
 
-@if (_nexuses is null)
-{
-    <p class="text-muted">Loading…</p>
-}
-else if (!_nexuses.Any())
-{
-    <div class="gc-card gc-empty">No recent nexuses discovered.</div>
-}
-else
-{
-    <div class="gc-card gc-grid-card">
-        <FluentDataGrid Items="@_nexuses.AsQueryable()" TGridItem="Nexus" GridTemplateColumns="1.1fr 1fr 1fr 1fr 2.4fr 0.9fr 1fr" Class="gc-grid">
-            <TemplateColumn Title="Discovered">
-                <span class="text-muted">@context.DiscoveredDate.ToString("dd MMM yyyy")</span>
-            </TemplateColumn>
-            <TemplateColumn Title="Type">
-                <span class="gc-pill badge-conditions">@context.NexusType</span>
-            </TemplateColumn>
-            <TemplateColumn Title="Source">
-                <a href="/assessment/@context.SourceAssessmentId">@context.SourceAssessmentId</a>
-            </TemplateColumn>
-            <TemplateColumn Title="Target">
-                <a href="/assessment/@context.TargetAssessmentId">@context.TargetAssessmentId</a>
-            </TemplateColumn>
-            <TemplateColumn Title="Summary">@context.Summary</TemplateColumn>
-            <TemplateColumn Title="Confidence">
-                <span class="text-muted">@context.Confidence</span>
-            </TemplateColumn>
-            <TemplateColumn Title="Actions" Align="Align.End">
-                <FluentAnchor Href="@($"/nexus/{context.Id}/{context.SourceAssessmentId}")" Appearance="Appearance.Accent">Detail</FluentAnchor>
-            </TemplateColumn>
-        </FluentDataGrid>
-    </div>
-}
-
-<div class="mt-3">
-    <a href="/nexus" class="btn btn-outline-secondary">← Back to Explorer</a>
+    @if (_loadFailed)
+    {
+        <div class="gc-empty-state" role="alert">
+            <h2>Recent nexuses could not be loaded</h2>
+            <p>Reload this page to try again. No records have been changed.</p>
+            <a href="/nexus/alerts" class="btn btn-outline-secondary" data-enhance-nav="false">Try again</a>
+        </div>
+    }
+    else if (_nexuses is null)
+    {
+        <p class="gc-meta" role="status">Loading recent nexuses…</p>
+    }
+    else if (!_nexuses.Any())
+    {
+        <div class="gc-empty-state">
+            <h2>No recent nexuses</h2>
+            <p>No connections were discovered in the last 30 days. Earlier connections are available in the explorer.</p>
+            <a href="/nexus" class="btn btn-outline-secondary">Explore all nexuses</a>
+        </div>
+    }
+    else
+    {
+        <div class="gc-section-header">
+            <h2>Recently discovered</h2>
+            <span class="gc-meta">Most recent first</span>
+        </div>
+        <ul class="gc-surface nexus-alert-list" aria-label="Recently discovered nexuses">
+            @foreach (var nexus in _nexuses)
+            {
+                <li class="gc-list-row nexus-alert-row" @key="nexus.Id">
+                    <div class="nexus-alert-heading">
+                        <h3><a href="/nexus/@nexus.Id/@nexus.SourceAssessmentId">@nexus.NexusType</a></h3>
+                        <span class="gc-meta">Discovered @nexus.DiscoveredDate.ToString("dd MMM yyyy")</span>
+                    </div>
+                    <p class="nexus-summary">@nexus.Summary</p>
+                    <dl class="nexus-alert-meta">
+                        <div>
+                            <dt>Source assessment</dt>
+                            <dd><a href="/assessment/@nexus.SourceAssessmentId">@nexus.SourceAssessmentId</a></dd>
+                        </div>
+                        <div>
+                            <dt>Target assessment</dt>
+                            <dd><a href="/assessment/@nexus.TargetAssessmentId">@nexus.TargetAssessmentId</a></dd>
+                        </div>
+                        <div>
+                            <dt>Confidence</dt>
+                            <dd>@nexus.Confidence</dd>
+                        </div>
+                    </dl>
+                    <div class="gc-action-group">
+                        <a href="/nexus/@nexus.Id/@nexus.SourceAssessmentId" class="btn btn-sm btn-outline-secondary"
+                           aria-label="@($"Review {nexus.NexusType} nexus {nexus.Id}")">Review connection</a>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
 </div>
 
 @code {
     private IReadOnlyList<Nexus>? _nexuses;
+    private bool _loadFailed;
 
     protected override async Task OnInitializedAsync()
     {
-        var all = await NexusStore.ListAllAsync();
-        var cutoff = DateTimeOffset.UtcNow.AddDays(-30);
-        _nexuses = all
-            .Where(n => n.DiscoveredDate >= cutoff)
-            .OrderByDescending(n => n.DiscoveredDate)
-            .ToList();
+        try
+        {
+            var all = await NexusStore.ListAllAsync();
+            var cutoff = DateTimeOffset.UtcNow.AddDays(-30);
+            _nexuses = all
+                .Where(n => n.DiscoveredDate >= cutoff)
+                .OrderByDescending(n => n.DiscoveredDate)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load recent nexuses");
+            _loadFailed = true;
+        }
     }
 }
