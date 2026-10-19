@@ -40,8 +40,8 @@
     <PackageReference Include="Microsoft.Agents.AI.Foundry" Version="1.5.0" />
     <PackageReference Include="Microsoft.Agents.AI.Workflows" Version="1.21.0" />
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.6.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
     <!-- Pin OpenTelemetry.Api to a non-vulnerable version to clear NU1902. -->
     <PackageReference Include="OpenTelemetry.Api" Version="1.18.0" />
   </ItemGroup>
