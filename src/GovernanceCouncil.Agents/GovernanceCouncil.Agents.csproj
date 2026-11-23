@@ -31,7 +31,7 @@
          2.10.0 but was removed in 2.11.0 → runtime MissingMethodException. MEAI.OpenAI 10.6.0 targets
          2.10.0; 10.7.0 forces 2.11.0, so it is pinned below. -->
     <PackageReference Include="OpenAI" Version="2.10.0" />
-    <PackageReference Include="Azure.AI.Projects" Version="2.0.1" />
+    <PackageReference Include="Azure.AI.Projects" Version="3.0.0" />
     <!-- Foundry IQ: Web Knowledge Source + Knowledge Base data-plane provisioning (SDK-first).
          12.1.0-beta.1 ships the KnowledgeBases models + 2026-05-01-preview service version. -->
     <PackageReference Include="Azure.Search.Documents" Version="12.1.0-beta.1" />
